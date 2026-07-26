@@ -1,0 +1,376 @@
+<title>Rèn · năm hướng thiết kế nữa</title>
+<style>
+/*@FONTS@*/
+:root{--wall:#ECECE9;--panel:#FFFFFF;--ink:#16161A;--ink2:#5B5B63;--ink3:#8E8E96;--line:#D9D9D4}
+@media (prefers-color-scheme:dark){:root{--wall:#101013;--panel:#17171B;--ink:#F2F2F0;--ink2:#A0A0A8;--ink3:#6E6E78;--line:#2A2A31}}
+:root[data-theme="dark"]{--wall:#101013;--panel:#17171B;--ink:#F2F2F0;--ink2:#A0A0A8;--ink3:#6E6E78;--line:#2A2A31}
+:root[data-theme="light"]{--wall:#ECECE9;--panel:#FFFFFF;--ink:#16161A;--ink2:#5B5B63;--ink3:#8E8E96;--line:#D9D9D4}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--wall)}
+body{color:var(--ink);font-family:"Be Vietnam Pro",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:44px 22px 80px}
+.top{max-width:730px;margin-bottom:40px}
+.kicker{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+h1{font-family:"Baloo 2",sans-serif;font-size:clamp(30px,5vw,42px);font-weight:700;line-height:1.1;margin:10px 0 12px;text-wrap:balance}
+.lede{font-size:15.5px;color:var(--ink2);max-width:64ch}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:34px}
+@media(max-width:900px){.grid{grid-template-columns:1fr;gap:38px}}
+.cell{min-width:0}
+.head{display:flex;align-items:baseline;gap:10px;margin-bottom:5px}
+.num{font-family:"Baloo 2",sans-serif;font-size:13px;font-weight:700;color:var(--ink3)}
+.name{font-family:"Baloo 2",sans-serif;font-size:20px;font-weight:700}
+.thesis{font-size:13.5px;color:var(--ink2);margin-bottom:16px;max-width:46ch}
+.stage{display:flex;justify-content:center;padding:22px 0 20px;background:var(--panel);border:1px solid var(--line);border-radius:20px}
+.diff{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.diff div{display:flex;gap:9px;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.diff b{color:var(--ink);font-weight:600}
+.diff i{flex:0 0 auto;width:5px;height:5px;border-radius:50%;background:var(--ink3);margin-top:7px}
+.foot{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink2);max-width:70ch}
+.foot b{color:var(--ink)}
+.dev{width:344px;max-width:100%;height:712px;border-radius:32px;overflow:hidden;position:relative;box-shadow:0 18px 44px rgba(0,0,0,.22),0 2px 6px rgba(0,0,0,.14)}
+.dev *{box-sizing:border-box}
+
+/* ══ 05 · THẺ LẬT ══ */
+.m5{background:#141230;display:flex;flex-direction:column;align-items:center;padding:26px 20px 24px;font-family:"Baloo 2",sans-serif;position:relative}
+.m5 .pips{display:flex;gap:6px;align-items:center;width:100%}
+.m5 .pips i{height:4px;border-radius:3px;background:#332F5E;flex:1}
+.m5 .pips i.on{background:#FF5C39}
+.m5 .pips span{font-size:11px;color:#7B77A8;font-family:"Be Vietnam Pro",sans-serif;font-weight:600;letter-spacing:.06em;margin-left:6px;white-space:nowrap}
+.m5 .stack{position:relative;width:100%;margin-top:34px;flex:1}
+.m5 .cd{position:absolute;inset:0;border-radius:26px;background:#FFFDF9}
+.m5 .cd.b2{transform:rotate(4deg) translateY(9px) scale(.965);background:#EDEAFB}
+.m5 .cd.b1{transform:rotate(-2.6deg) translateY(4px) scale(.985);background:#F7F5FF}
+.m5 .cd.fr{display:flex;flex-direction:column;padding:30px 26px;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.m5 .cd .no{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#9793B8;font-family:"Be Vietnam Pro",sans-serif}
+.m5 .cd .tk{font-size:38px;line-height:1.1;font-weight:700;color:#141230;margin-top:14px;letter-spacing:-.01em}
+.m5 .cd .mt{font-size:14px;color:#615D85;font-family:"Be Vietnam Pro",sans-serif;font-weight:500;margin-top:14px;line-height:1.5}
+.m5 .cd .big{margin-top:auto;font-size:96px;line-height:.9;font-weight:700;color:#FF5C39;letter-spacing:-.04em}
+.m5 .cd .big s{font-size:22px;color:#B6B2CE;text-decoration:none;letter-spacing:0}
+.m5 .acts{display:flex;gap:12px;width:100%;margin-top:22px}
+.m5 .acts div{flex:1;border-radius:20px;padding:15px 8px;text-align:center;font-size:15px;font-weight:700}
+.m5 .acts .sk{background:#221F45;color:#7B77A8;border:2px solid #332F5E}
+.m5 .acts .ok{background:#FF5C39;color:#FFF7F3}
+.m5 .hint{margin-top:14px;font-size:11.5px;color:#5B5786;font-family:"Be Vietnam Pro",sans-serif;letter-spacing:.05em}
+
+/* ══ 06 · NHỊP NGÀY ══ */
+.m6{background:#FAFAF7;color:#111112;font-family:"Be Vietnam Pro",system-ui,sans-serif;padding:24px 0 0;display:flex;flex-direction:column}
+.m6 .hd{padding:0 22px 16px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #111112}
+.m6 .hd .l{font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#8A8A85}
+.m6 .hd .d{font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1.1;margin-top:3px}
+.m6 .hd .r{text-align:right;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8A8A85;line-height:1.6}
+.m6 .hd .r b{display:block;font-size:19px;letter-spacing:-.01em;color:#111112;font-weight:500}
+.m6 .tl{flex:1;padding:16px 22px 0;position:relative}
+.m6 .sp{position:absolute;left:66px;top:16px;bottom:16px;width:1px;background:#DCDCD6}
+.m6 .ev{display:flex;gap:0;align-items:flex-start;position:relative;padding-bottom:24px}
+.m6 .ev .hr{width:44px;flex:0 0 44px;font-size:11px;font-family:ui-monospace,Menlo,monospace;color:#8A8A85;letter-spacing:.02em;padding-top:1px}
+.m6 .ev .mk{width:22px;flex:0 0 22px;display:flex;justify-content:center;padding-top:4px}
+.m6 .ev .mk i{width:7px;height:7px;border-radius:50%;background:#FAFAF7;border:1.5px solid #111112;display:block}
+.m6 .ev.done .mk i{background:#111112}
+.m6 .ev.wait .mk i{border-color:#B9B9B2}
+.m6 .ev .bd{flex:1;min-width:0;padding-left:10px}
+.m6 .ev .bd b{display:block;font-size:15px;font-weight:500;letter-spacing:-.005em}
+.m6 .ev.done .bd b{color:#111112}
+.m6 .ev.wait .bd b{color:#8A8A85}
+.m6 .ev .bd s{display:block;font-size:11.5px;color:#8A8A85;text-decoration:none;margin-top:2px}
+.m6 .now{display:flex;align-items:center;gap:0;margin:2px 0 24px}
+.m6 .now .hr{width:44px;flex:0 0 44px;font-size:11px;font-family:ui-monospace,Menlo,monospace;color:#D8232A;font-weight:700}
+.m6 .now .ln{flex:1;height:1px;background:#D8232A;position:relative}
+.m6 .now .ln::before{content:"";position:absolute;left:15px;top:-3px;width:7px;height:7px;border-radius:50%;background:#D8232A}
+.m6 .now .lb{font-size:9.5px;font-weight:700;letter-spacing:.18em;color:#D8232A;padding-left:8px}
+.m6 .ftr{border-top:1px solid #111112;padding:14px 22px 18px}
+.m6 .ftr .l{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#8A8A85;margin-bottom:9px}
+.m6 .strip{display:flex;gap:2px;align-items:flex-end;height:26px}
+.m6 .strip i{flex:1;background:#DCDCD6;height:9px}
+.m6 .strip i.h{background:#111112;height:22px}
+.m6 .strip i.c{background:#8A8A85;height:16px}
+.m6 .strip i.m{background:#D8232A;height:22px}
+.m6 .strip i.n{background:#D8232A;height:26px}
+
+/* ══ 07 · NHÂN VẬT ══ */
+.m7{background:#150F2E;color:#E8E4FF;font-family:ui-monospace,Menlo,Consolas,monospace;padding:16px 14px;display:flex;flex-direction:column;gap:11px;font-size:11px}
+.m7 .pn{border:3px solid #6D4FE8;background:#1E1642;padding:11px 12px;position:relative}
+.m7 .pn>.tt{position:absolute;top:-9px;left:9px;background:#150F2E;padding:0 6px;font-size:9px;font-weight:700;letter-spacing:.18em;color:#A6FF3D}
+.m7 .who{display:flex;align-items:center;gap:11px}
+.m7 .who .sp{width:46px;height:46px;flex:0 0 46px;background:#6D4FE8;border:3px solid #E8E4FF;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
+.m7 .who .sp i{background:transparent}
+.m7 .who .sp i.p{background:#A6FF3D}
+.m7 .who .nm{flex:1;min-width:0}
+.m7 .who .nm b{display:block;font-size:13px;letter-spacing:.06em;font-weight:700}
+.m7 .who .nm s{display:block;font-size:9.5px;color:#9C93D6;text-decoration:none;letter-spacing:.1em;margin-top:2px}
+.m7 .who .lv{background:#A6FF3D;color:#150F2E;font-weight:700;font-size:11px;padding:3px 8px;letter-spacing:.08em}
+.m7 .xp{display:flex;gap:2px;margin-top:11px}
+.m7 .xp i{flex:1;height:9px;background:#2E245C}
+.m7 .xp i.f{background:#A6FF3D}
+.m7 .xpl{display:flex;justify-content:space-between;font-size:9px;color:#9C93D6;margin-top:5px;letter-spacing:.1em}
+.m7 .row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px dashed #33295F}
+.m7 .row:last-child{border-bottom:0}
+.m7 .row .k{flex:1;min-width:0;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m7 .row .lvl{color:#A6FF3D;font-size:10px;letter-spacing:.06em}
+.m7 .row .bars{display:flex;gap:2px;flex:0 0 auto}
+.m7 .row .bars i{width:9px;height:9px;background:#2E245C}
+.m7 .row .bars i.f{background:#FF3DA6}
+.m7 .quest{display:flex;align-items:center;gap:9px;padding:5px 0}
+.m7 .quest .bx{width:14px;height:14px;flex:0 0 14px;border:2px solid #6D4FE8;background:#150F2E;display:flex;align-items:center;justify-content:center;color:#A6FF3D;font-size:10px;line-height:1}
+.m7 .quest.on .bx{background:#A6FF3D;border-color:#A6FF3D;color:#150F2E}
+.m7 .quest .q{flex:1;letter-spacing:.03em}
+.m7 .quest.on .q{color:#9C93D6;text-decoration:line-through}
+.m7 .quest .rw{font-size:9.5px;color:#FFD84D;letter-spacing:.06em}
+.m7 .hp{display:flex;gap:3px;align-items:center}
+.m7 .hp i{width:11px;height:11px;background:#FF3DA6;clip-path:polygon(50% 100%,0 45%,12% 12%,50% 30%,88% 12%,100% 45%)}
+.m7 .hp i.e{background:#33295F}
+.m7 .slots{display:flex;gap:6px}
+.m7 .sl{flex:1;border:2px solid #33295F;background:#150F2E;text-align:center;padding:7px 2px;font-size:12px;font-weight:700;color:#4A3F7A;letter-spacing:.04em}
+.m7 .sl s{display:block;font-size:7.5px;text-decoration:none;letter-spacing:.1em;margin-top:2px}
+.m7 .sl.on{border-color:#FFD84D;color:#FFD84D;background:#241B12}
+.m7 .btn{margin-top:auto;border:3px solid #E8E4FF;background:#A6FF3D;color:#150F2E;text-align:center;padding:12px;font-size:12px;font-weight:700;letter-spacing:.16em;box-shadow:4px 4px 0 #6D4FE8}
+
+/* ══ 08 · CÂY ══ */
+.m8{background:linear-gradient(180deg,#FBF7EC 0%,#F3EEDD 100%);color:#3A3226;font-family:"Be Vietnam Pro",system-ui,sans-serif;padding:26px 22px 22px;display:flex;flex-direction:column;align-items:center}
+.m8 .lb{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:#9C8F72}
+.m8 .vow{font-family:Lora,Georgia,serif;font-style:italic;font-size:17px;text-align:center;margin-top:7px;color:#5A4E3A;line-height:1.45}
+.m8 .plant{width:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;margin-top:6px}
+.m8 .plant svg{width:230px;height:auto}
+.m8 .soil{width:100%;text-align:center}
+.m8 .cnt{font-family:Lora,Georgia,serif;font-size:15px;color:#6E6248;font-style:italic}
+.m8 .cnt b{font-style:normal;font-weight:600;color:#5A7A48}
+.m8 .acts{width:100%;margin-top:16px;display:flex;flex-direction:column;gap:9px}
+.m8 .leafrow{display:flex;align-items:center;gap:11px;padding:11px 13px;background:rgba(255,255,255,.62);border-radius:15px;border:1px solid #E2D9C2}
+.m8 .leafrow .lf{width:18px;height:18px;flex:0 0 18px}
+.m8 .leafrow .nm{flex:1;font-size:14px;font-weight:500;color:#4A4134}
+.m8 .leafrow.off .nm{color:#9C8F72}
+.m8 .leafrow .st{font-size:11px;color:#7E8F5E;font-weight:600;letter-spacing:.04em}
+.m8 .leafrow.off .st{color:#B9A98A}
+.m8 .water{margin-top:14px;width:100%;background:#5A7A48;color:#F7F4EA;border-radius:17px;padding:14px;text-align:center;font-size:14.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 6px 16px rgba(90,122,72,.28)}
+
+/* ══ 09 · TRÒ CHUYỆN ══ */
+.m9{background:#EEF1F5;display:flex;flex-direction:column;font-family:"Be Vietnam Pro",system-ui,sans-serif}
+.m9 .bar{background:#fff;border-bottom:1px solid #DDE3EA;padding:14px 16px;display:flex;align-items:center;gap:11px}
+.m9 .bar .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,#2563EB,#1E40AF);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.m9 .bar .nm{flex:1}
+.m9 .bar .nm b{display:block;font-size:14.5px;font-weight:600}
+.m9 .bar .nm s{display:block;font-size:11px;color:#16A34A;text-decoration:none;font-weight:500}
+.m9 .thread{flex:1;padding:16px 14px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.m9 .tm{text-align:center;font-size:10.5px;color:#9AA5B1;font-weight:500;margin:2px 0}
+.m9 .msg{max-width:80%;font-size:14px;line-height:1.5;padding:10px 13px;border-radius:17px}
+.m9 .msg.co{background:#fff;border:1px solid #DDE3EA;border-bottom-left-radius:5px;align-self:flex-start;color:#1F2933}
+.m9 .msg.me{background:#2563EB;color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+.m9 .card{align-self:flex-start;max-width:86%;background:#fff;border:1px solid #DDE3EA;border-radius:17px;border-bottom-left-radius:5px;padding:13px;display:flex;gap:13px;align-items:center}
+.m9 .card .n{font-size:27px;font-weight:700;color:#2563EB;line-height:1;font-family:"Baloo 2",sans-serif}
+.m9 .card .tx{font-size:12.5px;color:#52606D;line-height:1.45}
+.m9 .card .tx b{color:#1F2933}
+.m9 .qr{display:flex;gap:7px;padding:0 14px 10px;flex-wrap:wrap}
+.m9 .qr div{border:1.5px solid #2563EB;color:#2563EB;background:#fff;border-radius:20px;padding:7px 13px;font-size:12.5px;font-weight:600}
+.m9 .inp{background:#fff;border-top:1px solid #DDE3EA;padding:11px 14px;display:flex;align-items:center;gap:10px}
+.m9 .inp .fx{flex:1;background:#F2F5F8;border:1px solid #DDE3EA;border-radius:20px;padding:9px 14px;font-size:13.5px;color:#9AA5B1}
+.m9 .inp .sd{width:34px;height:34px;border-radius:50%;background:#2563EB;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="kicker">Rèn · hướng 05 → 09</div>
+    <h1>Năm hướng nữa, đổi cả nguyên tắc tổ chức</h1>
+    <p class="lede">Bốn hướng trước đổi <b>hình thức</b>. Năm hướng này đổi <b>thứ dùng để sắp xếp thông tin</b>: một việc mỗi lúc, trục thời gian trong ngày, chỉ số nhân vật, một cơ thể sống, và một cuộc trò chuyện. Cùng dữ liệu: ngày 24/66, chuỗi 6, hai việc xong, ngủ 6.5h.</p>
+  </div>
+
+  <div class="grid">
+    <div class="cell">
+      <div class="head"><span class="num">05</span><span class="name">Thẻ lật</span></div>
+      <p class="thesis">Mỗi lần mở app chỉ thấy đúng một việc. Quẹt phải là xong, quẹt trái là để sau. Hết thẻ là hết ngày.</p>
+      <div class="stage"><div class="dev m5" id="d5"></div></div>
+      <div class="diff">
+        <div><i></i><span><b>Nguyên tắc:</b> một việc mỗi lúc — không cho thấy danh sách.</span></div>
+        <div><i></i><span><b>Tương tác:</b> quẹt bằng ngón, không bấm ô vuông.</span></div>
+        <div><i></i><span><b>Đánh đổi:</b> nhẹ đầu nhất, nhưng khó thấy toàn cảnh.</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="head"><span class="num">06</span><span class="name">Nhịp ngày</span></div>
+      <p class="thesis">Sắp việc theo giờ trong ngày, có vạch “bây giờ” chạy xuống. Không hỏi làm chưa, mà hỏi đến giờ chưa.</p>
+      <div class="stage"><div class="dev m6" id="d6"></div></div>
+      <div class="diff">
+        <div><i></i><span><b>Nguyên tắc:</b> thời gian, không phải danh sách. Việc gắn vào khung giờ.</span></div>
+        <div><i></i><span><b>Tương tác:</b> kéo việc lên xuống để đổi giờ làm.</span></div>
+        <div><i></i><span><b>Được:</b> lộ ra cái mà bốn hướng kia giấu — mày hay trượt vào giờ nào.</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="head"><span class="num">07</span><span class="name">Nhân vật</span></div>
+      <p class="thesis">Mày là nhân vật đang lên cấp. Mỗi việc là một kỹ năng có cấp riêng, chuỗi là máu, ngày là nhiệm vụ.</p>
+      <div class="stage"><div class="dev m7" id="d7"></div></div>
+      <div class="diff">
+        <div><i></i><span><b>Nguyên tắc:</b> chỉ số nhân vật — tiến bộ hiện thành cấp và điểm.</span></div>
+        <div><i></i><span><b>Tương tác:</b> nhận nhiệm vụ, ăn điểm thưởng, giữ máu.</span></div>
+        <div><i></i><span><b>Rủi ro:</b> vui lúc đầu, dễ nhàm khi hết cảm giác mới.</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="head"><span class="num">08</span><span class="name">Cây</span></div>
+      <p class="thesis">Chuỗi ngày là một cái cây. Làm đủ thì mọc thêm lá, trượt thì có lá úa nằm lại đó — không xoá được.</p>
+      <div class="stage"><div class="dev m8" id="d8"></div></div>
+      <div class="diff">
+        <div><i></i><span><b>Nguyên tắc:</b> một cơ thể sống, không phải con số.</span></div>
+        <div><i></i><span><b>Tương tác:</b> tưới cây = đánh dấu. Một hành động duy nhất.</span></div>
+        <div><i></i><span><b>Mặt tối:</b> lá úa gây áy náy — đòn tâm lý mạnh, dùng phải cẩn thận.</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="head"><span class="num">09</span><span class="name">Trò chuyện</span></div>
+      <p class="thesis">App nhắc như một người kèm. Mày trả lời bằng chip có sẵn — “xong rồi”, “để tối”, “đuối”. Sổ sách nằm trong lịch sử tin nhắn.</p>
+      <div class="stage"><div class="dev m9" id="d9"></div></div>
+      <div class="diff">
+        <div><i></i><span><b>Nguyên tắc:</b> hội thoại — app nói trước, mày chỉ đáp.</span></div>
+        <div><i></i><span><b>Tương tác:</b> chạm chip trả lời, không có màn hình nào để “quản lý”.</span></div>
+        <div><i></i><span><b>Được:</b> xử lý được ngày xấu tự nhiên nhất — nói “đuối” là nó tự hạ chuẩn.</span></div>
+      </div>
+    </div>
+
+    <div class="cell" style="display:flex;align-items:center">
+      <div style="padding:8px 4px">
+        <div class="head"><span class="num">SO</span><span class="name">Chín hướng, chọn theo cái gì</span></div>
+        <p class="thesis" style="max-width:none">Đừng chọn theo cái nào đẹp nhất. Chọn theo <b>thứ mày hay hỏng</b>:</p>
+        <div class="diff" style="margin-top:4px">
+          <div><i></i><span>Hay <b>quên làm</b> → <b>Nhịp ngày</b> (06), vì nó gắn việc vào giờ.</span></div>
+          <div><i></i><span>Hay <b>ngợp, thấy nhiều việc là bỏ</b> → <b>Thẻ lật</b> (05).</span></div>
+          <div><i></i><span>Cần <b>cảm giác thắng</b> mới chịu làm → <b>Nhân vật</b> (07) hoặc Bàn cờ (04).</span></div>
+          <div><i></i><span>Cần <b>ràng buộc cảm xúc</b> để không bỏ → <b>Cây</b> (08).</span></div>
+          <div><i></i><span>Hay <b>tự tha</b> khi mệt → <b>Trò chuyện</b> (09), nó chủ động hạ chuẩn cho mày.</span></div>
+          <div><i></i><span>Thích <b>tự soi số liệu</b> → Trạm đo (01) hoặc Sổ tay (02).</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Bốn hướng đầu vẫn ở link cũ. Tao khuyên thật: <b>06 Nhịp ngày</b> là hướng giải quyết đúng lỗi phổ biến nhất (quên, chứ không phải thiếu ý chí), và <b>09 Trò chuyện</b> là hướng duy nhất chủ động can thiệp lúc mày đuối thay vì chờ mày tự bấm. Nếu muốn một cái, chọn 06. Nếu muốn dùng lâu, ghép 06 làm màn chính + 08 làm phần thưởng dài hạn.</p>
+</div>
+
+<script>
+var DAYS=(function(){var a=[];for(var i=1;i<=66;i++){var s="n";if(i<=24){s="h";if(i===9)s="c";if(i===15)s="m";if(i%7===0&&i>3&&i!==14&&i!==21)s="c"}a.push({i:i,s:s})}return a})();
+
+/* 05 · thẻ lật */
+document.getElementById("d5").innerHTML=
+ '<div class="pips"><i class="on"></i><i class="on"></i><i></i><span>NGÀY 24/66</span></div>'
+ +'<div class="stack">'
+   +'<div class="cd b2"></div><div class="cd b1"></div>'
+   +'<div class="cd fr">'
+     +'<div class="no">việc cuối · 3 trên 3</div>'
+     +'<div class="tk">Ghi sổ<br>chi tiêu</div>'
+     +'<div class="mt">Mức tối thiểu: 1 phút. Mở app ngân hàng, gõ 3 số, xong.</div>'
+     +'<div class="big">1<s> phút</s></div>'
+   +'</div>'
+ +'</div>'
+ +'<div class="acts"><div class="sk">Để sau</div><div class="ok">Xong rồi</div></div>'
+ +'<div class="hint">quẹt phải khi làm xong · quẹt trái để hoãn</div>';
+
+/* 06 · nhịp ngày */
+(function(){
+  var strip=DAYS.map(function(d){return '<i class="'+(d.i<24?d.s:(d.i===24?"n":""))+'"></i>'}).join("");
+  document.getElementById("d6").innerHTML=
+   '<div class="hd"><div><div class="l">Chủ nhật · 26.07</div><div class="d">Nhịp ngày</div></div>'
+   +'<div class="r">ngày<b>24/66</b>chuỗi 6</div></div>'
+   +'<div class="tl"><div class="sp"></div>'
+     +'<div class="ev done"><span class="hr">06:30</span><span class="mk"><i></i></span><span class="bd"><b>10 chống đẩy</b><s>xong · đúng giờ · chuỗi riêng 15 ngày</s></span></div>'
+     +'<div class="ev done"><span class="hr">07:10</span><span class="mk"><i></i></span><span class="bd"><b>đọc 2 trang sách</b><s>xong · đọc được 18 trang</s></span></div>'
+     +'<div class="now"><span class="hr">14:20</span><span class="ln"></span><span class="lb">BÂY GIỜ</span></div>'
+     +'<div class="ev wait"><span class="hr">21:00</span><span class="mk"><i></i></span><span class="bd"><b>ghi sổ chi tiêu</b><s>còn 6 giờ 40 phút · khung giờ mày hay trượt</s></span></div>'
+     +'<div class="ev wait"><span class="hr">23:00</span><span class="mk"><i></i></span><span class="bd"><b>đi ngủ</b><s>ngủ đêm qua 6.5h — dưới mức của mày</s></span></div>'
+   +'</div>'
+   +'<div class="ftr"><div class="l">66 ngày · vòng 2</div><div class="strip">'+strip+'</div></div>';
+})();
+
+/* 07 · nhân vật */
+(function(){
+  var sp="";var P=[0,1,1,0, 1,0,0,1, 1,1,1,1, 0,1,1,0];
+  for(var i=0;i<16;i++)sp+='<i class="'+(P[i]?"p":"")+'"></i>';
+  var xp="";for(var j=0;j<14;j++)xp+='<i class="'+(j<10?"f":"")+'"></i>';
+  var bars=function(n,t){var s="";for(var k=0;k<t;k++)s+='<i class="'+(k<n?"f":"")+'"></i>';return s};
+  var hp="";for(var h=0;h<6;h++)hp+='<i></i>';hp+='<i class="e"></i>';
+  document.getElementById("d7").innerHTML=
+   '<div class="pn"><span class="tt">NHÂN VẬT</span>'
+     +'<div class="who"><div class="sp">'+sp+'</div>'
+       +'<div class="nm"><b>NGƯỜI RÈN</b><s>VÒNG 2 · NGÀY 24</s></div>'
+       +'<div class="lv">LV 4</div></div>'
+     +'<div class="xp">'+xp+'</div>'
+     +'<div class="xpl"><span>KINH NGHIỆM 60/84</span><span>LV5 CÒN 24</span></div></div>'
+   +'<div class="pn"><span class="tt">KỸ NĂNG</span>'
+     +'<div class="row"><span class="k">CHỐNG ĐẨY</span><span class="lvl">LV3</span><span class="bars">'+bars(3,4)+'</span></div>'
+     +'<div class="row"><span class="k">ĐỌC SÁCH</span><span class="lvl">LV2</span><span class="bars">'+bars(2,4)+'</span></div>'
+     +'<div class="row"><span class="k">GHI SỔ</span><span class="lvl">LV1</span><span class="bars">'+bars(1,4)+'</span></div></div>'
+   +'<div class="pn"><span class="tt">NHIỆM VỤ HÔM NAY · 2/3</span>'
+     +'<div class="quest on"><span class="bx">✓</span><span class="q">10 chống đẩy</span><span class="rw">+20 XP</span></div>'
+     +'<div class="quest on"><span class="bx">✓</span><span class="q">đọc 2 trang sách</span><span class="rw">+20 XP</span></div>'
+     +'<div class="quest"><span class="bx"></span><span class="q">ghi sổ chi tiêu</span><span class="rw">+20 XP</span></div></div>'
+   +'<div class="pn"><span class="tt">TRẠNG THÁI</span>'
+     +'<div class="row"><span class="k">CHUỖI (MÁU)</span><span class="hp">'+hp+'</span></div>'
+     +'<div class="row"><span class="k">GIẤC NGỦ</span><span class="lvl" style="color:#FF3DA6">6.5H · YẾU</span></div>'
+     +'<div class="row"><span class="k">KHIÊN BĂNG</span><span class="lvl">CÒN 2</span></div></div>'
+   +'<div class="pn"><span class="tt">THÀNH TÍCH</span>'
+     +'<div class="slots">'
+       +'<div class="sl on">7<s>NGÀY</s></div><div class="sl on">14<s>NGÀY</s></div>'
+       +'<div class="sl">30<s>NGÀY</s></div><div class="sl">66<s>NGÀY</s></div>'
+       +'<div class="sl on">TUẦN<s>SẠCH</s></div>'
+     +'</div></div>'
+   +'<div class="btn">XÁC NHẬN NGÀY 24</div>';
+})();
+
+/* 08 · cây */
+(function(){
+  var leaves="",n=24,tiers=12;
+  var jit=function(k){var v=Math.sin(k*12.9898)*43758.5453;return v-Math.floor(v)};
+  var stemX=function(y){return 118+Math.sin((300-y)/74)*8.5};
+  var leafPath=function(L,W){return "M0 0 Q"+(L*0.40)+" "+(-W)+" "+L+" 0 Q"+(L*0.44)+" "+(W*0.9)+" 0 0Z"};
+  for(var i=0;i<n;i++){
+    var tier=Math.floor(i/2), t=tier/(tiers-1), side=(i%2===0)?-1:1;
+    var y=294-t*230+(jit(i)-.5)*7;
+    var x=stemX(y);
+    var wilt=(i===14), pale=(i===8||i===19);
+    var L=(45-t*17)*(0.86+jit(i+7)*0.28), W=(10.5-t*3.4)*(0.9+jit(i+3)*0.22);
+    var col=wilt?"#B08968":(pale?"#93AC70":"#5A7A48");
+    var lift=(30-t*9)+(jit(i+11)-.5)*13;
+    var ang=(side<0?180:0)+(side<0?1:-1)*lift+(wilt?(side<0?-54:54):0);
+    leaves+='<g transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+ang.toFixed(1)+')">'
+      +'<path d="'+leafPath(L,W)+'" fill="'+col+'" opacity="'+(wilt?.6:.95)+'"/>'
+      +'<path d="M2 0 Q'+(L*0.5)+' '+(-W*0.18)+' '+(L*0.88)+' 0" fill="none" stroke="'+(wilt?"#8A6A4E":"#3E5930")+'" stroke-width="1" opacity=".42"/>'
+      +'</g>';
+  }
+  document.getElementById("d8").innerHTML=
+   '<div class="lb">vòng 2 · ngày 24</div>'
+   +'<div class="vow">“Tao là người rèn đều mỗi ngày.”</div>'
+   +'<div class="plant"><svg viewBox="0 0 236 340" aria-label="cây 24 lá">'
+     +'<circle cx="196" cy="42" r="21" fill="#F2D9A0" opacity=".65"/>'
+     +'<path d="M118 306 C 108 252 130 208 121 158 C 113 116 124 92 116 64" fill="none" stroke="#6E7F4A" stroke-width="4.6" stroke-linecap="round"/>'
+     + leaves
+     +'<path d="M102 62 q14 -17 28 -1 q-14 11 -28 1z" fill="#5A7A48"/>'
+     +'<path d="M74 306 h88 l-9 26 h-70z" fill="#C6714B"/>'
+     +'<rect x="70" y="298" width="96" height="11" rx="3.5" fill="#B4633F"/>'
+   +'</svg></div>'
+   +'<div class="soil"><div class="cnt">Cây có <b>24 lá</b> · 1 lá úa từ ngày 15</div></div>'
+   +'<div class="acts">'
+     +'<div class="leafrow"><svg class="lf" viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="8" ry="4.6" fill="#5A7A48" transform="rotate(-30 10 10)"/></svg><span class="nm">10 chống đẩy</span><span class="st">đã tưới</span></div>'
+     +'<div class="leafrow"><svg class="lf" viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="8" ry="4.6" fill="#5A7A48" transform="rotate(-30 10 10)"/></svg><span class="nm">đọc 2 trang sách</span><span class="st">đã tưới</span></div>'
+     +'<div class="leafrow off"><svg class="lf" viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="8" ry="4.6" fill="#D6CBB2" transform="rotate(-30 10 10)"/></svg><span class="nm">ghi sổ chi tiêu</span><span class="st">chưa</span></div>'
+   +'</div>'
+   +'<div class="water"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3s6 6.4 6 10.4A6 6 0 0 1 6 13.4C6 9.4 12 3 12 3z"/></svg>Tưới cây · còn 1 lá hôm nay</div>';
+})();
+
+/* 09 · trò chuyện */
+document.getElementById("d9").innerHTML=
+ '<div class="bar"><div class="av">R</div><div class="nm"><b>Rèn</b><s>đang theo mày ngày 24/66</s></div></div>'
+ +'<div class="thread">'
+   +'<div class="tm">Hôm nay · 6:30</div>'
+   +'<div class="msg co">Sáng. 10 chống đẩy nhé — mức tối thiểu thôi, 2 phút là xong.</div>'
+   +'<div class="msg me">xong rồi</div>'
+   +'<div class="msg co">Ghi nhận. Còn 2 việc. Đêm qua ngủ 6.5h — hơi thiếu so với mức của mày.</div>'
+   +'<div class="tm">7:10</div>'
+   +'<div class="msg me">đọc sách rồi luôn, 18 trang</div>'
+   +'<div class="card"><div class="n">6</div><div class="tx"><b>Chuỗi 6 ngày.</b> Nhiều hơn tuần trước 2 ngày. Còn “ghi sổ chi tiêu” là đủ ngày 24.</div></div>'
+   +'<div class="tm">14:20</div>'
+   +'<div class="msg me">nay đuối quá</div>'
+   +'<div class="msg co">Vậy bật băng giữ chuỗi. Mày đã có 2 việc rồi nên chuỗi không đứt — việc còn lại để mai. Đi ngủ sớm quan trọng hơn.</div>'
+ +'</div>'
+ +'<div class="qr"><div>ừ bật băng</div><div>không, tao làm</div><div>để tối</div></div>'
+ +'<div class="inp"><div class="fx">Nhắn cho Rèn…</div><div class="sd">→</div></div>';
+</script>

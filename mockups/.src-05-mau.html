@@ -1,0 +1,116 @@
+<title>Rèn 05 · Thẻ lật — sáu bảng màu</title>
+<style>
+/*@FONTS@*/
+:root{--wall:#ECECE9;--panel:#FFFFFF;--ink:#16161A;--ink2:#5B5B63;--ink3:#8E8E96;--line:#D9D9D4}
+@media (prefers-color-scheme:dark){:root{--wall:#101013;--panel:#17171B;--ink:#F2F2F0;--ink2:#A0A0A8;--ink3:#6E6E78;--line:#2A2A31}}
+:root[data-theme="dark"]{--wall:#101013;--panel:#17171B;--ink:#F2F2F0;--ink2:#A0A0A8;--ink3:#6E6E78;--line:#2A2A31}
+:root[data-theme="light"]{--wall:#ECECE9;--panel:#FFFFFF;--ink:#16161A;--ink2:#5B5B63;--ink3:#8E8E96;--line:#D9D9D4}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--wall)}
+body{color:var(--ink);font-family:"Be Vietnam Pro",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:44px 22px 80px}
+.top{max-width:700px;margin-bottom:38px}
+.kicker{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+h1{font-family:"Baloo 2",sans-serif;font-size:clamp(28px,4.6vw,38px);font-weight:700;line-height:1.12;margin:10px 0 12px;text-wrap:balance}
+.lede{font-size:15px;color:var(--ink2);max-width:64ch}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px 26px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.cell{min-width:0}
+.head{display:flex;align-items:baseline;gap:9px;margin-bottom:4px}
+.num{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:600;color:var(--ink3)}
+.name{font-family:"Baloo 2",sans-serif;font-size:18px;font-weight:700}
+.thesis{font-size:12.5px;color:var(--ink2);margin-bottom:13px;min-height:52px}
+.stage{display:flex;justify-content:center;padding:18px 0 16px;background:var(--panel);border:1px solid var(--line);border-radius:18px}
+.sw{display:flex;gap:5px;margin-top:12px}
+.sw div{flex:1;text-align:center}
+.sw i{display:block;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,.12)}
+.sw s{display:block;font-family:ui-monospace,Menlo,monospace;font-size:8.5px;color:var(--ink3);text-decoration:none;margin-top:4px;letter-spacing:-.02em}
+.foot{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink2);max-width:70ch}
+.foot b{color:var(--ink)}
+.dev{width:322px;max-width:100%;height:666px;border-radius:30px;overflow:hidden;position:relative;box-shadow:0 16px 40px rgba(0,0,0,.2),0 2px 6px rgba(0,0,0,.12)}
+.dev *{box-sizing:border-box}
+
+/* ── mẫu 05 · thẻ lật: cấu trúc dùng chung, màu lấy từ token ── */
+.m5{background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:24px 18px 22px;font-family:"Baloo 2",sans-serif}
+.m5 .pips{display:flex;gap:6px;align-items:center;width:100%}
+.m5 .pips i{height:4px;border-radius:3px;background:var(--off);flex:1}
+.m5 .pips i.on{background:var(--ac)}
+.m5 .pips span{font-size:10.5px;color:var(--dim);font-family:"Be Vietnam Pro",sans-serif;font-weight:600;letter-spacing:.06em;margin-left:6px;white-space:nowrap}
+.m5 .stack{position:relative;width:100%;margin-top:30px;flex:1}
+.m5 .cd{position:absolute;inset:0;border-radius:24px}
+.m5 .cd.b2{transform:rotate(4deg) translateY(9px) scale(.965);background:var(--b2)}
+.m5 .cd.b1{transform:rotate(-2.6deg) translateY(4px) scale(.985);background:var(--b1)}
+.m5 .cd.fr{display:flex;flex-direction:column;padding:28px 24px;background:var(--card);box-shadow:0 18px 36px rgba(0,0,0,.28)}
+.m5 .cd .no{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--cm);font-family:"Be Vietnam Pro",sans-serif;opacity:.85}
+.m5 .cd .tk{font-size:35px;line-height:1.1;font-weight:700;color:var(--ct);margin-top:13px;letter-spacing:-.01em}
+.m5 .cd .mt{font-size:13.5px;color:var(--cm);font-family:"Be Vietnam Pro",sans-serif;font-weight:500;margin-top:13px;line-height:1.5}
+.m5 .cd .mini{margin-top:20px;border-top:1px solid color-mix(in srgb,var(--cm) 26%,transparent);font-family:"Be Vietnam Pro",sans-serif}
+.m5 .cd .mini div{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--cm) 14%,transparent)}
+.m5 .cd .mini div:last-child{border-bottom:0}
+.m5 .cd .mini .k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cm)}
+.m5 .cd .mini .v{font-size:14px;font-weight:600;color:var(--ct)}
+.m5 .cd .mini .v.hot{color:var(--ac)}
+.m5 .cd .big{margin-top:auto;font-size:88px;line-height:.9;font-weight:700;color:var(--ac);letter-spacing:-.04em}
+.m5 .cd .big s{font-size:21px;color:var(--bm);text-decoration:none;letter-spacing:0}
+.m5 .acts{display:flex;gap:11px;width:100%;margin-top:20px}
+.m5 .acts div{flex:1;border-radius:19px;padding:14px 8px;text-align:center;font-size:14.5px;font-weight:700}
+.m5 .acts .sk{background:var(--skb);color:var(--skt);border:2px solid var(--skd)}
+.m5 .acts .ok{background:var(--ac);color:var(--acT)}
+.m5 .hint{margin-top:13px;font-size:11px;color:var(--dim);font-family:"Be Vietnam Pro",sans-serif;letter-spacing:.05em;opacity:.85}
+
+/* ── sáu bảng màu ── */
+.q1{--bg:#141230;--b1:#F7F5FF;--b2:#EDEAFB;--card:#FFFDF9;--ct:#141230;--cm:#615D85;--ac:#FF5C39;--acT:#FFF7F3;--dim:#8480B0;--off:#332F5E;--skb:#221F45;--skd:#332F5E;--skt:#8480B0;--bm:#C4C0D8}
+.q2{--bg:#E7E5E0;--b1:#FFFFFF;--b2:#F1EFEA;--card:#FFFFFF;--ct:#121212;--cm:#6E6C67;--ac:#141414;--acT:#FFFFFF;--dim:#77746D;--off:#CFCCC5;--skb:#E7E5E0;--skd:#C6C3BB;--skt:#5E5B55;--bm:#B5B2AA}
+.q3{--bg:#173B2E;--b1:#F9F5E9;--b2:#EFE9D6;--card:#F7F2E4;--ct:#17301F;--cm:#6E7A5F;--ac:#E0A22B;--acT:#2A1C05;--dim:#8FA694;--off:#2A5244;--skb:#123026;--skd:#2A5244;--skt:#8FA694;--bm:#BBB49B}
+.q4{--bg:#45101F;--b1:#FFF3F4;--b2:#FBE6E9;--card:#FFF0F1;--ct:#3A0D1A;--cm:#8A5C66;--ac:#FF2E63;--acT:#FFF0F3;--dim:#C08794;--off:#6B2131;--skb:#370C18;--skd:#6B2131;--skt:#C08794;--bm:#D8AFB7}
+.q5{--bg:#21262B;--b1:#F7F9FA;--b2:#EBEFF1;--card:#F3F6F7;--ct:#12171B;--cm:#5E6B73;--ac:#CDEF43;--acT:#1B2205;--dim:#8695A0;--off:#333B42;--skb:#1A1F24;--skd:#333B42;--skt:#8695A0;--bm:#A7B4BC}
+.q6{--bg:#F1ECE1;--b1:#FFFFFF;--b2:#F7F3EA;--card:#FFFFFF;--ct:#14202E;--cm:#5E6B7A;--ac:#1B6FCA;--acT:#F2F7FD;--dim:#8A8375;--off:#DAD3C4;--skb:#F1ECE1;--skd:#D2CABA;--skt:#6E6659;--bm:#A9B4C1}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="kicker">Rèn · mẫu 05 Thẻ lật</div>
+    <h1>Sáu bảng màu cho thẻ lật</h1>
+    <p class="lede">Ở thiết kế này màu nặng ký hơn mẫu 06 nhiều: cả màn chỉ có <b>nền, mặt thẻ, và một màu hành động</b>. Đổi nền là đổi luôn cảm giác thẻ đang nổi trong bóng tối hay nằm trên bàn sáng — thứ mà bố cục không làm được.</p>
+  </div>
+  <div class="grid" id="g"></div>
+  <p class="foot">Bảng 06 là bảng duy nhất <b>nền sáng</b> — cùng bố cục mà đọc ra một app khác hẳn: thẻ không còn nổi trong tối mà nằm phẳng trên giấy. Nếu mày định dùng app này buổi sáng nhiều thì cân bảng 06 hoặc 02; dùng buổi tối thì 01, 03, 05.</p>
+</div>
+
+<script>
+function screen(){
+  return '<div class="pips"><i class="on"></i><i class="on"></i><i></i><span>NGÀY 24/66</span></div>'
+   +'<div class="stack">'
+     +'<div class="cd b2"></div><div class="cd b1"></div>'
+     +'<div class="cd fr">'
+       +'<div class="no">việc cuối · 3 trên 3</div>'
+       +'<div class="tk">Ghi sổ<br>chi tiêu</div>'
+       +'<div class="mt">Mức tối thiểu: 1 phút. Mở app ngân hàng, gõ 3 số, xong.</div>'
+       +'<div class="mini">'
+         +'<div><span class="k">chuỗi riêng</span><span class="v">6 ngày</span></div>'
+         +'<div><span class="k">đã hoãn tuần này</span><span class="v hot">2 lần</span></div>'
+       +'</div>'
+       +'<div class="big">1<s> phút</s></div>'
+     +'</div>'
+   +'</div>'
+   +'<div class="acts"><div class="sk">Để sau</div><div class="ok">Xong rồi</div></div>'
+   +'<div class="hint">quẹt phải khi làm xong · quẹt trái để hoãn</div>';
+}
+var PAL=[
+ {c:"q1",n:"Tím đêm & cam",t:"Bản gốc. Thẻ kem nổi bật trong nền tím thẫm, cam làm nút hành động. Kịch tính nhất, dễ tập trung vào một việc.",k:["#141230","#FFFDF9","#FF5C39","#221F45","#8480B0"]},
+ {c:"q2",n:"Không màu",t:"Bỏ hết màu: nền xám giấy, thẻ trắng, nút đen. Giống thiết bị đắt tiền — im lặng, không dỗ dành.",k:["#E7E5E0","#FFFFFF","#141414","#C6C3BB","#5E5B55"]},
+ {c:"q3",n:"Rừng & mật",t:"Xanh rừng thẫm với thẻ giấy ngà, nút vàng mật. Ấm và tĩnh, ít gây gấp gáp nhất.",k:["#173B2E","#F7F2E4","#E0A22B","#12302E","#8FA694"]},
+ {c:"q4",n:"Đô & hồng",t:"Đỏ đô sâu, thẻ hồng phấn, nút hồng gắt. Cảm xúc mạnh — hợp việc mày phải tự thúc mới làm.",k:["#45101F","#FFF0F1","#FF2E63","#370C18","#C08794"]},
+ {c:"q5",n:"Thép & chanh",t:"Xám than với xanh chanh acid. Chất phòng gym, thể thao — đọc ra thử thách hơn là chăm sóc.",k:["#21262B","#F3F6F7","#CDEF43","#1A1F24","#8695A0"]},
+ {c:"q6",n:"Giấy & biển",t:"Bảng duy nhất nền sáng: giấy kem, thẻ trắng, nút xanh biển. Nhẹ và ban ngày, thẻ nằm trên bàn thay vì nổi trong tối.",k:["#F1ECE1","#FFFFFF","#1B6FCA","#D2CABA","#6E6659"]}
+];
+document.getElementById("g").innerHTML=PAL.map(function(p,i){
+  return '<div class="cell">'
+   +'<div class="head"><span class="num">0'+(i+1)+'</span><span class="name">'+p.n+'</span></div>'
+   +'<div class="thesis">'+p.t+'</div>'
+   +'<div class="stage"><div class="dev m5 '+p.c+'">'+screen()+'</div></div>'
+   +'<div class="sw">'+p.k.map(function(h){return '<div><i style="background:'+h+'"></i><s>'+h.slice(1)+'</s></div>'}).join("")+'</div>'
+   +'</div>';
+}).join("");
+</script>

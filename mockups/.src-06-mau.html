@@ -1,0 +1,130 @@
+<title>Rèn 06 · Nhịp ngày — sáu bảng màu</title>
+<style>
+/*@FONTS@*/
+:root{--wall:#ECECE9;--panel:#FFFFFF;--ink:#16161A;--ink2:#5B5B63;--ink3:#8E8E96;--line:#D9D9D4}
+@media (prefers-color-scheme:dark){:root{--wall:#101013;--panel:#17171B;--ink:#F2F2F0;--ink2:#A0A0A8;--ink3:#6E6E78;--line:#2A2A31}}
+:root[data-theme="dark"]{--wall:#101013;--panel:#17171B;--ink:#F2F2F0;--ink2:#A0A0A8;--ink3:#6E6E78;--line:#2A2A31}
+:root[data-theme="light"]{--wall:#ECECE9;--panel:#FFFFFF;--ink:#16161A;--ink2:#5B5B63;--ink3:#8E8E96;--line:#D9D9D4}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--wall)}
+body{color:var(--ink);font-family:"Be Vietnam Pro",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:44px 22px 80px}
+.top{max-width:700px;margin-bottom:38px}
+.kicker{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+h1{font-family:"Baloo 2",sans-serif;font-size:clamp(28px,4.6vw,38px);font-weight:700;line-height:1.12;margin:10px 0 12px;text-wrap:balance}
+.lede{font-size:15px;color:var(--ink2);max-width:62ch}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px 26px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.cell{min-width:0}
+.head{display:flex;align-items:baseline;gap:9px;margin-bottom:4px}
+.num{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:600;color:var(--ink3)}
+.name{font-family:"Baloo 2",sans-serif;font-size:18px;font-weight:700}
+.thesis{font-size:12.5px;color:var(--ink2);margin-bottom:13px;min-height:36px}
+.stage{display:flex;justify-content:center;padding:18px 0 16px;background:var(--panel);border:1px solid var(--line);border-radius:18px}
+.sw{display:flex;gap:5px;margin-top:12px}
+.sw div{flex:1;text-align:center}
+.sw i{display:block;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,.12)}
+.sw s{display:block;font-family:ui-monospace,Menlo,monospace;font-size:8.5px;color:var(--ink3);text-decoration:none;margin-top:4px;letter-spacing:-.02em}
+.foot{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink2);max-width:70ch}
+.foot b{color:var(--ink)}
+.dev{width:322px;max-width:100%;height:666px;border-radius:30px;overflow:hidden;position:relative;box-shadow:0 16px 40px rgba(0,0,0,.2),0 2px 6px rgba(0,0,0,.12)}
+.dev *{box-sizing:border-box}
+
+/* ── mẫu 06: cấu trúc dùng chung, màu lấy từ token ── */
+.m6{background:var(--pg);color:var(--ink6);font-family:"Be Vietnam Pro",system-ui,sans-serif;padding:22px 0 0;display:flex;flex-direction:column}
+.m6 .hd{padding:0 20px 15px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--ink6)}
+.m6 .hd .l{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.m6 .hd .d{font-size:24px;font-weight:500;letter-spacing:-.02em;line-height:1.1;margin-top:3px}
+.m6 .hd .r{text-align:right;font-size:9.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);line-height:1.6}
+.m6 .hd .r b{display:block;font-size:18px;letter-spacing:-.01em;color:var(--ink6);font-weight:500}
+.m6 .tl{flex:1;padding:15px 20px 0;position:relative}
+.m6 .sp{position:absolute;left:62px;top:15px;bottom:14px;width:1px;background:var(--hair)}
+.m6 .ev{display:flex;align-items:flex-start;position:relative;padding-bottom:22px}
+.m6 .ev .hr{width:42px;flex:0 0 42px;font-size:10.5px;font-family:ui-monospace,Menlo,monospace;color:var(--dim);padding-top:1px}
+.m6 .ev .mk{width:20px;flex:0 0 20px;display:flex;justify-content:center;padding-top:4px}
+.m6 .ev .mk i{width:7px;height:7px;border-radius:50%;background:var(--pg);border:1.5px solid var(--ink6);display:block}
+.m6 .ev.done .mk i{background:var(--ink6)}
+.m6 .ev.wait .mk i{border-color:var(--soft)}
+.m6 .ev .bd{flex:1;min-width:0;padding-left:9px}
+.m6 .ev .bd b{display:block;font-size:14.5px;font-weight:500;letter-spacing:-.005em}
+.m6 .ev.wait .bd b{color:var(--dim)}
+.m6 .ev .bd s{display:block;font-size:11px;color:var(--dim);text-decoration:none;margin-top:2px;line-height:1.45}
+.m6 .now{display:flex;align-items:center;margin:0 0 22px}
+.m6 .now .hr{width:42px;flex:0 0 42px;font-size:10.5px;font-family:ui-monospace,Menlo,monospace;color:var(--ac);font-weight:700}
+.m6 .now .ln{flex:1;height:1px;background:var(--ac);position:relative}
+.m6 .now .ln::before{content:"";position:absolute;left:14px;top:-3px;width:7px;height:7px;border-radius:50%;background:var(--ac)}
+.m6 .now .lb{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--ac);padding-left:7px}
+.m6 .rest{display:flex;align-items:center;gap:9px;padding-left:62px;margin-top:2px}
+.m6 .rest .dl{flex:1;height:1px;background:var(--hair)}
+.m6 .rest .tx{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:600;white-space:nowrap}
+.m6 .sumry{margin-top:auto;padding:0 20px 14px;display:flex;justify-content:space-between;align-items:flex-end}
+.m6 .sumry .k{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.m6 .sumry .v{font-size:15px;font-weight:500;margin-top:3px}
+.m6 .sumry .v em{font-style:normal;color:var(--ac)}
+.m6 .ftr{border-top:1px solid var(--ink6);padding:13px 20px 17px}
+.m6 .ftr .l{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.m6 .strip{display:flex;gap:2px;align-items:flex-end;height:24px}
+.m6 .strip i{flex:1;background:var(--hair);height:8px}
+.m6 .strip i.h{background:var(--ink6);height:20px}
+.m6 .strip i.c{background:var(--dim);height:15px}
+.m6 .strip i.m{background:var(--ac);height:20px}
+.m6 .strip i.n{background:var(--ac);height:24px}
+
+/* ── sáu bảng màu ── */
+.p1{--pg:#FAFAF7;--ink6:#111112;--dim:#8A8A85;--hair:#DCDCD6;--soft:#B9B9B2;--ac:#D8232A}
+.p2{--pg:#EFF3F8;--ink6:#0F2740;--dim:#6B8299;--hair:#CBD8E4;--soft:#A8BCCE;--ac:#0B63CE}
+.p3{--pg:#0E100F;--ink6:#EAEAE6;--dim:#7C817D;--hair:#242724;--soft:#3A3E3B;--ac:#FFB020}
+.p4{--pg:#EFE7D7;--ink6:#2C2720;--dim:#8B7F6A;--hair:#D6CAB4;--soft:#BCAE93;--ac:#A6461F}
+.p5{--pg:#F1F7F4;--ink6:#0E241B;--dim:#6E8A7C;--hair:#CBDDD3;--soft:#A9C4B7;--ac:#00996A}
+.p6{--pg:#FFFFFF;--ink6:#0F0F0F;--dim:#9A9A9A;--hair:#E6E6E6;--soft:#CFCFCF;--ac:#0F0F0F}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="kicker">Rèn · mẫu 06 Nhịp ngày</div>
+    <h1>Sáu bảng màu, cùng một cấu trúc</h1>
+    <p class="lede">Bố cục, khoảng cách, cỡ chữ giữ nguyên tuyệt đối — chỉ đổi năm giá trị màu. Nhìn cạnh nhau mới thấy màu đổi <b>cảm giác</b> của cùng một thiết kế đến mức nào: từ nghiêm khắc sang kỹ thuật, ấm cũ, y tế, hay lạnh tanh không màu.</p>
+  </div>
+  <div class="grid" id="g"></div>
+  <p class="foot">Mỗi bảng chỉ gồm <b>năm biến</b>: nền, mực, chữ mờ, đường kẻ, và một màu nhấn duy nhất dùng cho vạch “bây giờ” và ngày đứt chuỗi. Đổi màu app sau này chỉ là sửa năm dòng đó. Chọn số nào tao dựng app thật theo màu đó — hoặc nói tao trộn, ví dụ nền của 04 với màu nhấn của 02.</p>
+</div>
+
+<script>
+var DAYS=(function(){var a=[];for(var i=1;i<=66;i++){var s="n";if(i<=24){s="h";if(i===9)s="c";if(i===15)s="m";if(i%7===0&&i>3&&i!==14&&i!==21)s="c"}a.push({i:i,s:s})}return a})();
+var STRIP=DAYS.map(function(d){return '<i class="'+(d.i<24?d.s:(d.i===24?"n":""))+'"></i>'}).join("");
+
+function screen(){
+  return '<div class="hd"><div><div class="l">Chủ nhật · 26.07</div><div class="d">Nhịp ngày</div></div>'
+   +'<div class="r">ngày<b>24/66</b>chuỗi 6</div></div>'
+   +'<div class="tl"><div class="sp"></div>'
+     +'<div class="ev done"><span class="hr">06:30</span><span class="mk"><i></i></span><span class="bd"><b>10 chống đẩy</b><s>xong · đúng giờ · chuỗi riêng 15 ngày</s></span></div>'
+     +'<div class="ev done"><span class="hr">07:10</span><span class="mk"><i></i></span><span class="bd"><b>đọc 2 trang sách</b><s>xong · đọc được 18 trang</s></span></div>'
+     +'<div class="now"><span class="hr">14:20</span><span class="ln"></span><span class="lb">BÂY GIỜ</span></div>'
+     +'<div class="ev wait"><span class="hr">21:00</span><span class="mk"><i></i></span><span class="bd"><b>ghi sổ chi tiêu</b><s>còn 6 giờ 40 phút · khung giờ mày hay trượt</s></span></div>'
+     +'<div class="ev wait"><span class="hr">23:00</span><span class="mk"><i></i></span><span class="bd"><b>đi ngủ</b><s>ngủ đêm qua 6.5h — dưới mức của mày</s></span></div>'
+     +'<div class="rest"><span class="dl"></span><span class="tx">hết lịch hôm nay</span><span class="dl"></span></div>'
+   +'</div>'
+   +'<div class="sumry"><div><div class="k">còn lại</div><div class="v"><em>1 việc</em> · 6g40</div></div>'
+     +'<div style="text-align:right"><div class="k">giữ chuỗi cần</div><div class="v">1 việc nữa</div></div></div>'
+   +'<div class="ftr"><div class="l">66 ngày · vòng 2</div><div class="strip">'+STRIP+'</div></div>';
+}
+
+var PAL=[
+ {c:"p1",n:"Mực & son",t:"Bản gốc. Giấy trắng ngà, mực gần đen, một sắc đỏ son. Nghiêm khắc, không cảm xúc.",k:["#FAFAF7","#111112","#DCDCD6","#8A8A85","#D8232A"]},
+ {c:"p2",n:"Bản vẽ",t:"Xanh mực kỹ thuật trên giấy lạnh. Cảm giác bản thiết kế, đo đạc — hợp người thích số liệu.",k:["#EFF3F8","#0F2740","#CBD8E4","#6B8299","#0B63CE"]},
+ {c:"p3",n:"Đêm",t:"Nền đen, mực trắng ngà, nhấn hổ phách. Dùng ban đêm không chói, vạch giờ nổi bật nhất.",k:["#0E100F","#EAEAE6","#242724","#7C817D","#FFB020"]},
+ {c:"p4",n:"Giấy kraft",t:"Giấy cũ, mực nâu, nhấn rỉ sắt. Ấm và có tuổi — gần với cảm giác sổ tay hơn là app.",k:["#EFE7D7","#2C2720","#D6CAB4","#8B7F6A","#A6461F"]},
+ {c:"p5",n:"Bạc hà",t:"Xanh bạc hà rất nhạt, mực xanh thẫm, nhấn lục. Sạch kiểu phòng khám, dịu mắt nhất.",k:["#F1F7F4","#0E241B","#CBDDD3","#6E8A7C","#00996A"]},
+ {c:"p6",n:"Không màu",t:"Bỏ hẳn màu nhấn — vạch “bây giờ” cũng đen. Cực đoan nhất: mọi thứ chỉ còn đậm và nhạt.",k:["#FFFFFF","#0F0F0F","#E6E6E6","#9A9A9A","#0F0F0F"]}
+];
+var LBL=["nền","mực","kẻ","mờ","nhấn"];
+document.getElementById("g").innerHTML=PAL.map(function(p,i){
+  return '<div class="cell">'
+   +'<div class="head"><span class="num">0'+(i+1)+'</span><span class="name">'+p.n+'</span></div>'
+   +'<div class="thesis">'+p.t+'</div>'
+   +'<div class="stage"><div class="dev m6 '+p.c+'">'+screen()+'</div></div>'
+   +'<div class="sw">'+p.k.map(function(h,j){return '<div><i style="background:'+h+'"></i><s>'+h.slice(1)+'</s></div>'}).join("")+'</div>'
+   +'</div>';
+}).join("");
+</script>

@@ -1,4 +1,4 @@
-var CACHE = "ren-v1";
+var CACHE = "ren-v2-thelat";
 var ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg", "./icon-maskable.svg"];
 
 self.addEventListener("install", function (e) {
