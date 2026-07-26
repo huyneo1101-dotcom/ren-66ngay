@@ -1,0 +1,16 @@
+{
+  "name": "Rèn · Kỷ luật 66 ngày",
+  "short_name": "Rèn",
+  "description": "Việc tối thiểu mỗi ngày, chuỗi ngày, băng giữ chuỗi và phân tích — 66 ngày để một việc tự chạy.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f5f1",
+  "theme_color": "#16a34a",
+  "lang": "vi",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
