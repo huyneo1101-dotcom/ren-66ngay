@@ -27,7 +27,7 @@ Bản thiết kế cũ (5 khu vực, xanh lá) giữ ở `v-xanh-cu.html`, dùng
 - PWA: `manifest.json` + `sw.js` → thêm vào màn hình chính, dùng được khi mất mạng.
 - Dữ liệu lưu `localStorage` khoá `ren.v2`, tự di trú từ `ren-v1`; hai bản thiết kế dùng chung khoá này. Xuất/nhập `.json` để backup hoặc chuyển máy.
 - Đồng bộ (nếu bật): ba hàm RPC `security definer` trên Supabase — `ren_push` / `ren_pull` / `ren_forget`. Lược đồ và mô hình bảo mật ở [`docs/supabase-setup.sql`](docs/supabase-setup.sql). Mã đồng bộ nằm ở khoá localStorage **riêng** `ren.sync`, không đi kèm file `.json` xuất ra.
-- Nhắc: `.github/workflows/notify-telegram.yml` chạy `.github/scripts/send_telegram.py` lúc 14:00 UTC (21:00 VN), gửi qua Telegram Bot API bằng `urllib` thuần — dùng chung bot với Điểm Tin Thế Giới.
+- Nhắc: `.github/workflows/notify-telegram.yml` chạy `.github/scripts/send_telegram.py` lúc 14:00 UTC (21:00 VN), gửi qua Telegram Bot API bằng `urllib` thuần, bằng bot Telegram riêng của app này.
 
 **Lưu ý:** mặc định dữ liệu vẫn chỉ nằm trong trình duyệt của từng máy. Chưa bật Đồng bộ thì đổi máy hoặc xoá cache là mất — thỉnh thoảng vào Cài đặt → *Xuất bản sao .json*.
 

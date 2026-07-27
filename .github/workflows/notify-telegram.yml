@@ -28,7 +28,9 @@ jobs:
       - uses: actions/checkout@v7   # cùng phiên bản với các workflow đang chạy của Điểm Tin
       - name: Gửi tin nhắc
         env:
-          # Dùng CHUNG bot với Điểm Tin Thế Giới — Huy chỉ phải quản một token.
+          # Bot RIÊNG của Rèn (27/07/2026 đổi khỏi bot Điểm Tin). Tách ra vì hai lý do:
+          # tin nhắc kỷ luật hằng ngày không bị lẫn vào luồng bản tin, và revoke token bên
+          # Điểm Tin không kéo theo chết nhắc bên này.
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           # Mã đồng bộ lấy trong app: Cài đặt → Đồng bộ & nhắc Telegram → Copy mã.

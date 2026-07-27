@@ -67,8 +67,16 @@ Dùng chung project với Điểm Tin Thế Giới (`ltmlueqkajqmduoqghdf`).
 
 ## Telegram
 
-Dùng **chung bot với Điểm Tin Thế Giới** (`@diemtin24h_bot`) — Huy chỉ quản một token. Secret
-cần đặt cho repo này: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `REN_DEVICE_ID`.
+**Bot RIÊNG của Rèn** — 27/07/2026 Huy tách khỏi bot Điểm Tin (`@diemtin24h_bot`). Đừng gộp lại:
+tin nhắc kỷ luật hằng ngày lẫn vào luồng bản tin thì cả hai đều bị lướt qua, và token dùng chung
+nghĩa là sự cố ở app này kéo sập app kia. Secret cần đặt cho repo này: `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_CHAT_ID`, `REN_DEVICE_ID`.
+
+`TELEGRAM_CHAT_ID` **không đổi khi đổi bot** — nó là id người dùng Telegram, không phải id của
+cặp người-bot. Nhưng bot mới **không nhắn trước được**: chưa bấm Start thì `sendMessage` trả 403
+`bot can't initiate conversation with a user`. Cái này thì `send_all` trả `rc = 1` nên workflow
+đỏ và thấy ngay — khác hẳn ba chốt "thoát êm" ở trên, vốn chỉ êm khi *chưa cấu hình*, chứ đã
+cấu hình mà gửi hỏng thì phải kêu.
 
 **Trạng thái cấu hình (27/07/2026):** bảng `ren_state` + ba hàm đã tạo trên project
 `ltmlueqkajqmduoqghdf` (đã kiểm: push/pull/forget chạy, đọc thẳng bảng bị chặn 401, mã sai định
