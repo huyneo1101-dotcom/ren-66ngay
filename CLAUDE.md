@@ -11,6 +11,7 @@ App web một-file. Không build step, không framework, không package.json. S�
 | Bản thiết kế cũ (5 khu vực, xanh lá) | `v-xanh-cu.html` — **dùng chung `localStorage`**, KHÔNG có phần đồng bộ |
 | Lược đồ + mô hình bảo mật Supabase | `docs/supabase-setup.sql` |
 | Script nhắc Telegram | `.github/scripts/send_telegram.py` |
+| Nhận nút tick từ Telegram | `.github/scripts/tick_bot.py` + `.github/workflows/tick-bot.yml` |
 | Cắm token Telegram | `.github/scripts/setup-telegram.py` — chạy một lần, xem docstring |
 | Lịch nhắc | `.github/workflows/notify-telegram.yml` — 14:00 UTC = 21:00 VN |
 
@@ -19,9 +20,13 @@ có chủ đích**, xem dưới).
 
 ## Quy tắc bắt buộc
 
-1. **Đổi cách tính thì phải đổi ở CẢ HAI nơi.** `isHit` · `streak` · `dayIx` · `rateAll` tồn tại
+1. **Đổi cách tính thì phải đổi ở CẢ BA nơi.** `isHit` · `streak` · `dayIx` · `rateAll` tồn tại
    hai bản: JS trong `index.html` và bản dịch Python trong `send_telegram.py`. Lệch nhau là app
    hiện một con số, tin nhắn Telegram hiện con số khác — kiểu lỗi không ai báo mà tự mất niềm tin.
+   **Nơi thứ ba (thêm 27/07/2026): hàm `ren_tick` trong Postgres** — nó quyết định "chốt xong"
+   nghĩa là gì, hiện đang là *tick đủ mọi việc trong `habits`*, khớp ngưỡng `isHit` của ngày
+   thường. Đổi `isHit` (ví dụ cho phép đạt khi làm 2/3 việc) mà quên sửa `ren_tick` thì nút
+   Telegram vẫn tick đủ hết — app tính là đạt, nhưng số việc ghi vào nhật ký sai sự thật.
 2. **Bump `CACHE` trong `sw.js`** mỗi lần sửa nội dung đáng kể, nếu không máy đã cài PWA giữ bản cũ.
 3. **Giữ đúng phong cách code:** `var`, hàm ngắn một dòng, không arrow function, không template
    literal, không thư viện. Code mới lạc phong cách trong file một-file là rất chướng.
@@ -99,6 +104,43 @@ thì mốc 21:00 hằng ngày sẽ ĐỎ (cố ý, xem bẫy số 5). Đỏ = "c
 Bản sao mã đồng bộ để ở `/Users/Huy/Claude/.ren66-device-id` (chmod 600, **ngoài repo** vì repo
 này public). Mất file đó mà cũng mất máy thì mất luôn nhật ký trên server — không có đường
 khôi phục, vì mã chính là chìa khoá duy nhất.
+
+### 🔘 Nút tick ngay trong tin nhắc (thêm 27/07/2026, chỉ thị Huy)
+
+Tin nhắc 21:00 nay mang **một nút inline**: chưa đạt thì `✅ Xong hết N việc`, đạt rồi thì
+`↩️ Bỏ tick hôm nay`. Bấm là ghi thẳng Supabase, không phải mở app.
+
+**Vì sao làm:** tin nhắc cũ là MỘT CHIỀU — nhắc xong để đó, muốn tick vẫn phải mở app. Mà hồ sơ
+tính cách chỉ đúng một chỗ: lỗi lõi là **ma sát lúc bị tính điểm**, không phải lười. Mỗi bước
+phải làm thêm là một chỗ để bỏ cuộc. Bot sửa lại tin nhắn ngay sau khi ghi, nên nó cũng đóng
+luôn vai "người thứ hai đã thấy" — thứ mà nhật ký một mình không tạo được.
+
+| Mảnh | Việc |
+|---|---|
+| `nut()` trong `send_telegram.py` | Dựng bàn phím. **Một nút mỗi lúc**, `callback_data = ren:xong\|bo:YYYY-MM-DD` |
+| `tick_bot.py` | Đọc callback → gọi RPC `ren_tick` → `answerCallbackQuery` + **sửa lại tin nhắc** |
+| `ren_tick` (Postgres) | Ghi atomic, chỉ đụng `days[ngày].t` — xem `docs/supabase-setup.sql` |
+| `tick-bot.yml` | Cron `*/5 14-17` (21:00–00:59 VN, khung hay bấm) + `*/30 * * * *` vét cả ngày |
+
+**Năm quyết định thiết kế, đừng "dọn cho gọn" mất:**
+1. **Ngày khoá cứng trong `callback_data`**, không để lúc xử lý mới suy — Huy hay bấm sau nửa
+   đêm, lúc đó "hôm nay" đã sang ngày mới mà cái cần chốt vẫn là ngày của tin nhắc.
+2. **Ghi qua `ren_tick` chứ tuyệt đối không đọc-sửa-`ren_push`.** `ren_push` đè cả state; app
+   trên máy vừa lưu bản mới hơn là mất sạch thay đổi đó, và mất im lặng.
+3. **Sửa lại tin nhắc sau khi ghi.** Job chạy theo cron nên có thể trả lời muộn vài phút, lúc đó
+   dòng chớp của `answerCallbackQuery` đã hết hạn và Huy không thấy gì. Tin nhắn sửa thì nằm lại.
+4. **Mọi nhánh lỗi phải NHẮN LẠI.** Bấm nút mà không hồi âm là kiểu hỏng tệ nhất ở đây: Huy
+   tưởng đã chốt, thực tế không ghi được, mai mới phát hiện chuỗi đứt.
+5. **`concurrency` chặn hai lịch cron trùng phút :00/:30.** Không chặn thì hai job cùng đọc một
+   lô callback trước khi bên nào kịp xác nhận offset → tin nhắc bị sửa hai lần, nhìn như bot loạn.
+
+⏱️ **Trễ tới 5 phút là đánh đổi đã biết** — poll chứ không webhook. Muốn tức thì phải có server
+luôn bật, không đáng cho một nút bấm mỗi ngày.
+
+Kiểm mà không cần token, không đụng hàng đợi thật:
+```
+DRY_RUN=1 REN_FAKE_UPDATES=<file.json> TELEGRAM_CHAT_ID=111222 python3 .github/scripts/tick_bot.py
+```
 
 Ba chốt an toàn trong `send_telegram.py`, giữ nguyên tinh thần khi sửa:
 

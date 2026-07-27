@@ -88,11 +88,75 @@ language sql security definer set search_path = public as $$
   delete from ren_state where device = p_device;
 $$;
 
--- Chỉ ba hàm này là cửa vào. `revoke from public` trước rồi mới grant đúng hai vai — nếu chỉ
+-- ── TICK MỘT NGÀY: nút bấm trong tin nhắc Telegram (thêm 27/07/2026) ────────────────────
+-- VÌ SAO KHÔNG DÙNG ren_push CHO VIỆC NÀY: ren_push ghi ĐÈ TOÀN BỘ state. Bot muốn tick thì
+-- phải đọc state -> sửa -> đẩy lại, mà giữa hai bước đó app trên máy có thể vừa lưu bản mới
+-- hơn (ghi chú, đổi việc, tick tay). Đẩy đè là MẤT thay đổi đó — lost update kinh điển, và
+-- mất im lặng: không ai báo, chỉ thấy dữ liệu tự nhiên thiếu.
+-- Hàm này đọc-sửa-ghi TRONG MỘT giao dịch, có `for update` khoá dòng, và chỉ đụng đúng
+-- days[p_ngay].t — mọi field khác của ngày đó và mọi ngày khác giữ nguyên.
+-- "Xong" = tick ĐỦ MỌI việc, vì đó là ngưỡng `isHit` của app. Bot cố ý không cho tick lẻ từng
+-- việc: tin nhắc là chỗ trả lời một nhát, muốn chi tiết thì mở app.
+create or replace function ren_tick(p_device text, p_ngay text, p_xong boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  s    jsonb;
+  ids  jsonb;
+  rec  jsonb;
+  need int;
+begin
+  if p_device !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'ren_tick: mã đồng bộ sai định dạng';
+  end if;
+  -- Ngày do người gọi khai rõ, KHÔNG lấy now() phía DB: server chạy UTC mà "hôm nay" của Huy
+  -- là giờ VN — để DB tự suy là tick nhầm sang ngày hôm sau trong khoảng 00:00–07:00.
+  if p_ngay !~ '^\d{4}-\d{2}-\d{2}$' then
+    raise exception 'ren_tick: ngày phải dạng YYYY-MM-DD';
+  end if;
+
+  select state into s from ren_state where device = p_device for update;
+  if s is null then
+    raise exception 'ren_tick: chưa có dữ liệu cho mã đồng bộ này';
+  end if;
+
+  select coalesce(jsonb_agg(h->>'id'), '[]'::jsonb) into ids
+    from jsonb_array_elements(coalesce(s->'habits', '[]'::jsonb)) h
+   where h->>'id' is not null;
+  need := jsonb_array_length(ids);
+  if need = 0 then
+    raise exception 'ren_tick: chưa khai báo việc nào';
+  end if;
+
+  -- jsonb_set KHÔNG tạo được path trung gian, nên phải chắc chắn có 'days' trước.
+  if s->'days' is null or jsonb_typeof(s->'days') <> 'object' then
+    s := jsonb_set(s, '{days}', '{}'::jsonb, true);
+  end if;
+
+  -- Ngày chưa có bản ghi thì dựng đúng shape `ensure()` của index.html — thiếu field là app
+  -- đọc ra undefined rồi vỡ chỗ khác.
+  rec := coalesce(s->'days'->p_ngay, jsonb_build_object(
+    't', '[]'::jsonb, 'sleep', null, 'energy', null, 'm', null,
+    'crisis', false, 'closed', false, 'note', '', 'snz', 0));
+
+  rec := jsonb_set(rec, '{t}', case when p_xong then ids else '[]'::jsonb end);
+  s   := jsonb_set(s, array['days', p_ngay], rec, true);
+
+  update ren_state set state = s where device = p_device;
+
+  return jsonb_build_object(
+    'ok', true, 'ngay', p_ngay,
+    'n', jsonb_array_length(rec->'t'), 'need', need,
+    'crisis', coalesce((rec->>'crisis')::boolean, false));
+end $$;
+
+-- Chỉ bốn hàm này là cửa vào. `revoke from public` trước rồi mới grant đúng hai vai — nếu chỉ
 -- grant mà quên revoke thì PUBLIC vẫn giữ quyền execute mặc định.
-revoke all on function ren_push(text, jsonb) from public;
-revoke all on function ren_pull(text)        from public;
-revoke all on function ren_forget(text)      from public;
-grant execute on function ren_push(text, jsonb) to anon, authenticated;
-grant execute on function ren_pull(text)        to anon, authenticated;
-grant execute on function ren_forget(text)      to anon, authenticated;
+revoke all on function ren_push(text, jsonb)            from public;
+revoke all on function ren_pull(text)                   from public;
+revoke all on function ren_forget(text)                 from public;
+revoke all on function ren_tick(text, text, boolean)    from public;
+grant execute on function ren_push(text, jsonb)         to anon, authenticated;
+grant execute on function ren_pull(text)                to anon, authenticated;
+grant execute on function ren_forget(text)              to anon, authenticated;
+grant execute on function ren_tick(text, text, boolean) to anon, authenticated;

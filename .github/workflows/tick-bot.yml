@@ -1,0 +1,46 @@
+name: Nhận nút tick từ Telegram
+
+# Đọc các nút Huy đã bấm trong tin nhắc rồi ghi vào Supabase.
+#
+# LỊCH KHÔNG ĐỀU LÀ CỐ Ý. Nút chỉ xuất hiện sau tin nhắc 21:00, và gần như luôn được bấm trong
+# vài tiếng sau đó — nên khung tối poll dày (5 phút), còn cả ngày chỉ vét thưa (30 phút) để
+# không bỏ sót cái nút bấm muộn hôm sau. Telegram giữ update chưa xác nhận 24h nên vét thưa là
+# đủ an toàn; poll 5 phút suốt ngày chỉ tốn run chứ không nhanh thêm được lúc nào cần.
+#
+# ⏱️ TRỄ TỚI 5 PHÚT LÀ ĐÁNH ĐỔI ĐÃ BIẾT. Bấm nút xong không có gì nhảy ra ngay — vì thế
+# `tick_bot.py` SỬA LẠI CHÍNH TIN NHẮC sau khi ghi (`editMessageText`) chứ không chỉ dựa vào
+# `answerCallbackQuery`: dòng chớp đó hết hạn sau ~10 giây, còn tin nhắn sửa thì nằm lại, mở ra
+# lúc nào cũng thấy đã chốt hay chưa. Muốn tức thì thì phải chuyển sang webhook + server luôn
+# bật — không đáng cho một nút bấm mỗi ngày.
+on:
+  schedule:
+    - cron: '*/5 14-17 * * *'   # 21:00–00:59 VN — khung Huy hay bấm, poll dày
+    - cron: '*/30 * * * *'      # vét cả ngày, cho nút bấm muộn
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Hai lịch trên trùng nhau ở phút :00 và :30. Không chặn thì hai job cùng gọi getUpdates, cùng
+# xử lý một lô trước khi bên nào kịp xác nhận offset — tick thì vẫn đúng (đặt t = đủ việc, chạy
+# lại không đổi kết quả) nhưng tin nhắc bị sửa hai lần liên tiếp, nhìn như bot loạn.
+concurrency:
+  group: ren-tick-bot
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Đọc nút và ghi tick
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REN_DEVICE_ID: ${{ secrets.REN_DEVICE_ID }}
+        run: python3 .github/scripts/tick_bot.py

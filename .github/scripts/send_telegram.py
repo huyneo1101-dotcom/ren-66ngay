@@ -252,6 +252,39 @@ def build(state, updated_at, now):
     return [ "\n".join(lines) + link ]
 
 
+# ── nút bấm ──────────────────────────────────────────────────────────────────────────────
+def nut(state, now):
+    """Bàn phím inline cho tin nhắc, hoặc None nếu ngày này không có gì để bấm.
+
+    VÌ SAO CÓ: trước đây tin nhắc là MỘT CHIỀU — nó nhắc rồi thôi, muốn tick vẫn phải mở app.
+    Mà hồ sơ tính cách chỉ đúng một chỗ: lỗi lõi là MA SÁT lúc bị tính điểm, không phải lười.
+    Mỗi bước phải làm thêm là một chỗ để bỏ cuộc. Bấm một nút ngay trong tin nhắn thì ma sát
+    gần bằng 0, và bot trả lời lại chuỗi ngay — thành luôn cái "người thứ hai" mà nhật ký một
+    mình không bao giờ tạo được.
+
+    CHỈ MỘT NÚT MỖI LÚC, cố ý: tin nhắc là chỗ trả lời một nhát. Chưa xong thì cho chốt cả
+    ngày; xong rồi thì cho gỡ (bấm nhầm là chuyện có thật, mà không có đường lùi thì lần sau
+    người ta ngại bấm). Muốn tick lẻ từng việc thì mở app — đừng bê cả bảng vào tin nhắn.
+
+    `ngay` khoá cứng vào callback_data chứ KHÔNG để lúc xử lý mới suy: Huy hay bấm sau nửa đêm,
+    lúc đó "hôm nay" đã sang ngày mới mà cái cần chốt vẫn là ngày của tin nhắc.
+    """
+    if state is None:
+        return None
+    r = Ren(state)
+    if not r.start or not r.need:
+        return None
+    today = now.date()
+    if r.day_ix(today) > CYCLE_LEN:
+        return None
+    ngay = d2k(today)
+    if r.hit(today):
+        nhan, data = "↩️ Bỏ tick hôm nay", f"ren:bo:{ngay}"
+    else:
+        nhan, data = f"✅ Xong hết {r.need} việc", f"ren:xong:{ngay}"
+    return {"inline_keyboard": [[{"text": nhan, "callback_data": data}]]}
+
+
 # ── gửi ──────────────────────────────────────────────────────────────────────────────────
 def api(token, method, payload):
     req = urllib.request.Request(
@@ -262,14 +295,19 @@ def api(token, method, payload):
         return json.loads(r.read().decode("utf-8"))
 
 
-def send_all(token, chats, msgs):
+def send_all(token, chats, msgs, markup=None):
     rc = 0
     for chat in chats:
-        for m in msgs:
+        for i, m in enumerate(msgs):
+            payload = {"chat_id": chat, "text": m, "parse_mode": "HTML",
+                       "disable_web_page_preview": True}
+            # Nút chỉ gắn vào message CUỐI: gắn vào mọi message thì một ngày bị cắt thành
+            # nhiều tin sẽ hiện mấy cái nút giống hệt nhau, bấm cái nào cũng được — rối, và
+            # các nút còn lại thành nút chết sau lần bấm đầu.
+            if markup and i == len(msgs) - 1:
+                payload["reply_markup"] = markup
             try:
-                res = api(token, "sendMessage", {
-                    "chat_id": chat, "text": m, "parse_mode": "HTML",
-                    "disable_web_page_preview": True})
+                res = api(token, "sendMessage", payload)
             except Exception as e:
                 print(f"LỖI sendMessage tới {chat}: {e}", file=sys.stderr)
                 rc = 1
@@ -315,15 +353,18 @@ def main():
     msgs = build(state, updated_at, datetime.datetime.now(VN))
     msgs = [m if len(m) <= MAX_LEN else m[:MAX_LEN - 1] + "…" for m in msgs]
 
+    kb = nut(state, datetime.datetime.now(VN))
+
     if dry:
         print(f"=== DRY_RUN — {len(msgs)} message ===")
         for i, m in enumerate(msgs, 1):
             print(f"\n----- message {i}/{len(msgs)} ({len(m)} ký tự) -----")
             print(m)
+        print(f"\n----- nút -----\n{json.dumps(kb, ensure_ascii=False) if kb else '(không có)'}")
         return 0
     # `thieu` còn sót ở đây nghĩa là mất REN_DEVICE_ID: tin vẫn gửi được (bản rút gọn) nhưng
     # cấu hình đang gãy — gửi xong rồi mới để job đỏ, không nuốt.
-    return send_all(token, chats, msgs) or (1 if thieu else 0)
+    return send_all(token, chats, msgs, kb) or (1 if thieu else 0)
 
 
 if __name__ == "__main__":
