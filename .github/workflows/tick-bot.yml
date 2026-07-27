@@ -38,6 +38,27 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Chỉ chạy khi bấm tay. Trả lời câu "token đang cắm là bot NÀO" — câu này hỏi lại nhiều
+      # lần vì secret không đọc ngược được, mà cắm nhầm token bot Điểm Tin là lỗi đã được lường
+      # trước (setup-telegram.py có chốt chặn riêng cho nó). Username bot vốn công khai với bất
+      # kỳ ai chat với nó, nên in ra log không lộ thêm gì.
+      - name: Bot nào đang cắm?
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          t = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+          if not t:
+              print("chưa cắm TELEGRAM_BOT_TOKEN"); raise SystemExit
+          with urllib.request.urlopen(
+                  f"https://api.telegram.org/bot{t}/getMe", timeout=30) as r:
+              me = json.loads(r.read())["result"]
+          print(f"bot: @{me['username']}  ·  tên: {me.get('first_name')}")
+          print(f"link mở bot: https://t.me/{me['username']}")
+          PY
+
       - name: Đọc nút và ghi tick
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
