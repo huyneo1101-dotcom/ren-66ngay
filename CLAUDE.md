@@ -85,21 +85,34 @@ nghĩa là sự cố ở app này kéo sập app kia. Secret cần đặt cho re
 `TELEGRAM_CHAT_ID`, `REN_DEVICE_ID`.
 
 `TELEGRAM_CHAT_ID` **không đổi khi đổi bot** — nó là id người dùng Telegram, không phải id của
-cặp người-bot. Nhưng bot mới **không nhắn trước được**: chưa bấm Start thì `sendMessage` trả 403
-`bot can't initiate conversation with a user`. Cái này thì `send_all` trả `rc = 1` nên workflow
-đỏ và thấy ngay — khác hẳn ba chốt "thoát êm" ở trên, vốn chỉ êm khi *chưa cấu hình*, chứ đã
-cấu hình mà gửi hỏng thì phải kêu.
+cặp người-bot. Nhưng bot mới **không nhắn trước được**: chưa bấm Start thì `sendMessage` hỏng.
+Cái này thì `send_all` trả `rc = 1` nên workflow đỏ và thấy ngay — khác hẳn ba chốt "thoát êm" ở
+trên, vốn chỉ êm khi *chưa cấu hình*, chứ đã cấu hình mà gửi hỏng thì phải kêu.
+
+⚠️ **Mã lỗi thật là `400 Bad Request: chat not found`, KHÔNG phải 403** (đo thật 27/07/2026, run
+30274126666 — mục này trước ghi 403 `bot can't initiate conversation`, sai). Đừng tra cứu theo
+403 nữa: 403 là ca người dùng đã Start rồi CHẶN bot, còn chưa Start lần nào thì với Telegram cặp
+chat này đơn giản là *không tồn tại*. Sửa bằng cách mở bot và bấm **Start**, không phải đổi token.
+Cũng vì ca này mà `api()` nay **đọc body lỗi** thay vì để `urlopen` raise trần: log cũ chỉ hiện
+`HTTP Error 400: Bad Request`, không cách nào biết là "chat not found" hay "can't parse entities".
 
 **Cắm token:** `python3 .github/scripts/setup-telegram.py` — hỏi token bằng `getpass` (không in
 ra màn hình), kiểm `getMe`, **chặn nếu dán nhầm token @diemtin24h_bot**, tự dò `chat_id`, gửi tin
 thử, `gh secret set` qua stdin, rồi bấm chạy workflow thật và chờ kết quả. Gửi thử hỏng thì
 **không đặt secret nào cả** — đặt vào là repo mang cấu hình chưa từng chạy được.
 
-**Trạng thái cấu hình (27/07/2026):** bảng `ren_state` + ba hàm đã tạo trên project
-`ltmlueqkajqmduoqghdf` (đã kiểm: push/pull/forget chạy, đọc thẳng bảng bị chặn 401, mã sai định
-dạng bị chặn 400). Secret `REN_DEVICE_ID` và `TELEGRAM_CHAT_ID` đã đặt.
-⛔ **`TELEGRAM_BOT_TOKEN` CHƯA ĐẶT** — bot riêng chưa được tạo. Tới khi Huy chạy `setup-telegram.py`
-thì mốc 21:00 hằng ngày sẽ ĐỎ (cố ý, xem bẫy số 5). Đỏ = "chưa cắm token", không phải hỏng mới.
+**Trạng thái cấu hình (đo thật 27/07/2026 lúc 21:20):** bảng `ren_state` + **bốn** hàm đã tạo trên
+project `ltmlueqkajqmduoqghdf` (đã kiểm: push/pull/forget/tick chạy, đọc thẳng bảng bị chặn 401,
+mã sai định dạng bị chặn 400). **Cả ba secret đã đặt** — `TELEGRAM_BOT_TOKEN` cắm lúc 21:08, token
+hợp lệ (`getUpdates` trả ok).
+
+⛔ **Còn HAI việc phải làm trên thiết bị, chưa xong thì tin nhắc vẫn đỏ:**
+1. **Bấm Start với bot Rèn** trên Telegram — hiện `sendMessage` trả `400 chat not found`.
+2. **Bật Đồng bộ trong app Rèn**, với mã trùng `REN_DEVICE_ID` (bản sao ở
+   `/Users/Huy/Claude/.ren66-device-id`, 4 ký tự cuối `d52e`). Đo thật: bảng `ren_state` đang
+   **rỗng hoàn toàn**, chưa có dòng nào — nên tin nhắc chỉ ra được bản rút gọn "không kéo được
+   tiến độ", và **nút tick không hiện** (`nut()` trả None khi không có state, cố ý: không có
+   danh sách việc thì không biết tick cái gì).
 
 Bản sao mã đồng bộ để ở `/Users/Huy/Claude/.ren66-device-id` (chmod 600, **ngoài repo** vì repo
 này public). Mất file đó mà cũng mất máy thì mất luôn nhật ký trên server — không có đường
