@@ -160,7 +160,7 @@ body.sheeton #app{display:none}
 
 <script>
 var KEY="ren.v2", OLD="ren-v1";
-var DEF={v:2,identity:"",habits:[],metric:{name:"",unit:""},pact:{who:"",stake:""},env:[],start:null,cycle:1,days:{},history:[],theme:"auto",tab:"today"};
+var DEF={v:2,t:0,identity:"",habits:[],metric:{name:"",unit:""},pact:{who:"",stake:""},env:[],start:null,cycle:1,days:{},history:[],theme:"auto",tab:"today"};
 var S=load(), UI=null, back=[], drag=null;
 
 function load(){
@@ -188,7 +188,119 @@ function mig(p){
   for(var k in d){var r=d[k];o.days[k]={t:r.t||[],sleep:r.sleep==null?null:r.sleep,energy:null,m:r.m==null?null:r.m,crisis:!!r.crisis,closed:!!r.closed,note:"",snz:0}}
   return o;
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){S.t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}SY.queue()}
+function snapshot(){var c=JSON.parse(JSON.stringify(S));for(var k in c.days){delete c.days[k]._draft;delete c.days[k]._mdraft}return c}
+
+/* ─── đồng bộ Supabase — TUỲ CHỌN, MẶC ĐỊNH TẮT ───────────────────────────────────────
+   Ba việc: backup (chữa cái "đổi máy là mất"), mở cùng dữ liệu ở máy khác, và cho GitHub
+   Action đọc tiến độ mà soạn tin nhắc Telegram 21h — trình duyệt đóng thì không tự nhắc được.
+   MẶC ĐỊNH TẮT vì app này công khai trên GitHub Pages: bật sẵn là đẩy nhật ký của người lạ
+   lên máy chủ của Huy mà họ không hề chọn.
+   Mã đồng bộ nằm ở khoá localStorage RIÊNG (`ren.sync`), KHÔNG nằm trong state — nhờ vậy file
+   .json xuất ra đưa cho ai cũng không kèm chìa khoá vào dữ liệu trên máy chủ.
+   Lược đồ + mô hình bảo mật: docs/supabase-setup.sql */
+var SB="https://ltmlueqkajqmduoqghdf.supabase.co";
+var SBK="sb_publishable_74Lm6cc0CkoOOzy3A4IRrQ_BX0jHQcg";
+var SKEY="ren.sync", RE_ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+var SY={cfg:{id:"",on:false,at:0},timer:null,busy:false,again:false,msg:""};
+
+function uuid4(){
+  if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+  var b=new Uint8Array(16);
+  if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(b);
+  else for(var j=0;j<16;j++)b[j]=Math.floor(Math.random()*256);
+  b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+  var h=[];for(var i=0;i<16;i++)h.push((256+b[i]).toString(16).slice(1));
+  return h.slice(0,4).join("")+"-"+h.slice(4,6).join("")+"-"+h.slice(6,8).join("")+"-"+h.slice(8,10).join("")+"-"+h.slice(10).join("");
+}
+SY.read=function(){try{var o=JSON.parse(localStorage.getItem(SKEY)||"null");
+  if(o&&RE_ID.test(o.id||""))SY.cfg={id:o.id,on:!!o.on,at:o.at||0}}catch(e){}};
+SY.write=function(){try{localStorage.setItem(SKEY,JSON.stringify(SY.cfg))}catch(e){}};
+SY.rpc=function(fn,body,cb){
+  if(!window.fetch){cb(new Error("trình duyệt không hỗ trợ"));return}
+  fetch(SB+"/rest/v1/rpc/"+fn,{method:"POST",keepalive:true,
+    headers:{"apikey":SBK,"Authorization":"Bearer "+SBK,"Content-Type":"application/json"},
+    body:JSON.stringify(body)})
+   .then(function(r){return r.ok?r.json().then(function(j){cb(null,j)})
+                              :r.text().then(function(t){cb(new Error(r.status+" "+t.slice(0,120)))})})
+   .catch(function(e){cb(e)});
+};
+/* Chi tiết lỗi ra console, giao diện chỉ nói ngắn: nguyên văn PostgREST là một cục JSON dài,
+   nhét vào ô tip thì đẩy hết phần hướng dẫn ra khỏi tầm mắt. */
+SY.why=function(e){
+  if(window.console&&console.warn)console.warn("[đồng bộ]",e);
+  if(navigator.onLine===false)return "đang mất mạng";
+  var m=String(e&&e.message||""), code=m.match(/^\d{3}/);
+  return code?("máy chủ trả lỗi "+code[0]):"không gọi được máy chủ";
+};
+SY.done=function(){if(UI==="setup")drawSheet()};
+/* Chống dội: mỗi lần quẹt thẻ là một save(); gom 2,5 giây rồi mới đẩy một lần. Đang đẩy dở mà
+   có save() mới thì hẹn đẩy lại sau, không bắn song song (hai request đua nhau, cái cũ về sau
+   sẽ ghi đè cái mới). */
+SY.queue=function(){if(!SY.cfg.on||!SY.cfg.id)return;clearTimeout(SY.timer);SY.timer=setTimeout(SY.push,2500)};
+SY.push=function(){
+  if(!SY.cfg.on||!SY.cfg.id)return;
+  if(SY.busy){SY.again=true;return}
+  SY.busy=true;
+  SY.rpc("ren_push",{p_device:SY.cfg.id,p_state:snapshot()},function(err){
+    SY.busy=false;
+    if(err)SY.msg="Chưa đẩy được — "+SY.why(err);
+    else{SY.cfg.at=Date.now();SY.write();SY.msg=""}
+    if(SY.again){SY.again=false;SY.queue()}else SY.done();
+  });
+};
+/* Kéo bản trên máy chủ về rồi TRỘN, xong đẩy bản đã trộn lên. Chạy lúc mở app và khi bấm
+   "Đồng bộ ngay". Không ghi đè thẳng: hai máy cùng dùng một mã thì máy nào mở sau cũng phải
+   giữ được công của máy kia. */
+SY.boot=function(quiet){
+  if(!SY.cfg.on||!SY.cfg.id)return;
+  SY.rpc("ren_pull",{p_device:SY.cfg.id},function(err,j){
+    if(err){SY.msg="Chưa kéo được — "+SY.why(err);SY.done();return}
+    var row=j&&j.length?j[0]:null;
+    if(row&&row.state&&row.state.habits){S=mergeState(S,fix(row.state));UI2render()}
+    SY.msg="";save();
+    if(!quiet)toast(row?"Đã đồng bộ.":"Đã tạo bản trên máy chủ.");
+    SY.done();
+  });
+};
+function UI2render(){if(UI)drawSheet();render()}
+/* Trộn hai bản. Nguyên tắc: KHÔNG BAO GIỜ xoá công đã ghi — tick hai bên hợp nhất, số đo bên
+   nào có thì giữ. Phần cấu hình (việc, căn tính, ngày bắt đầu) lấy bản mới hơn theo `t`,
+   TRỪ khi một bên chưa có việc nào: máy mới cài `t` nhảy lên now ngay khi chạm vào giao diện,
+   so mốc thời gian thuần sẽ nuốt mất bản thật của máy cũ. */
+function mergeState(a,b){
+  var an=(a.habits||[]).length, bn=(b.habits||[]).length;
+  var bNew=(b.t||0)>(a.t||0);
+  var base=(!an&&bn)?b:((!bn&&an)?a:(bNew?b:a));
+  var o=JSON.parse(JSON.stringify(base)), keys={}, k;
+  o.days={};
+  for(k in (a.days||{}))keys[k]=1;
+  for(k in (b.days||{}))keys[k]=1;
+  for(k in keys)o.days[k]=mergeDay((a.days||{})[k],(b.days||{})[k],bNew);
+  o.t=Math.max(a.t||0,b.t||0);
+  return fix(o);
+}
+function mergeDay(x,y,bNew){
+  if(!x)return JSON.parse(JSON.stringify(y));
+  if(!y)return JSON.parse(JSON.stringify(x));
+  var n=JSON.parse(JSON.stringify(bNew?y:x)), old=bNew?x:y, t=(n.t||[]).slice();
+  (old.t||[]).forEach(function(id){if(t.indexOf(id)<0)t.push(id)});
+  n.t=t;
+  ["sleep","m","energy"].forEach(function(f){if(n[f]==null&&old[f]!=null)n[f]=old[f]});
+  if(!n.note&&old.note)n.note=old.note;
+  n.crisis=!!(n.crisis||old.crisis);
+  n.closed=!!(n.closed||old.closed);
+  n.snz=Math.max(n.snz||0,old.snz||0);
+  delete n._draft;delete n._mdraft;
+  return n;
+}
+SY.line=function(){
+  if(SY.msg)return SY.msg+". Sẽ thử lại ở lần lưu sau.";
+  if(!SY.cfg.at)return "Chưa đẩy lần nào.";
+  var d=new Date(SY.cfg.at), hh=pad(d.getHours())+":"+pad(d.getMinutes());
+  return "Đã đẩy lúc "+hh+(dk(d)===today()?" hôm nay":" ngày "+fmtFull(dk(d)))+".";
+};
+SY.read();
 function uid(){return Math.random().toString(36).slice(2,9)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function pad(n){return String(n).padStart(2,"0")}
@@ -513,12 +625,25 @@ function vSetup(){
      +[["auto","Theo hệ thống"],["light","Giấy"],["dark","Đêm"]].map(function(x){
        return '<button class="chip '+(S.theme===x[0]?"on":"")+'" data-a="theme" data-v="'+x[0]+'">'+x[1]+'</button>'}).join("")
    +'</div></div>'
+   +'<div class="blk"><span class="lb">Đồng bộ &amp; nhắc Telegram</span>'
+     +(SY.cfg.on
+       ? '<div class="fld"><div class="two">'
+           +'<input value="'+esc(SY.cfg.id)+'" readonly aria-label="mã đồng bộ">'
+           +'<button class="ed" data-a="synccopy" style="flex:0 0 auto">Copy mã</button></div></div>'
+         +'<button class="btn gh" data-a="syncnow">Đồng bộ ngay</button>'
+         +'<button class="btn gh" data-a="syncoff">Tắt đồng bộ</button>'
+         +'<button class="btn dg" data-a="syncdel">Tắt và xoá bản trên máy chủ</button>'
+         +'<div class="tip">'+esc(SY.line())+' Mã trên là chìa khoá vào dữ liệu — dán vào máy khác để dùng chung, đừng đưa cho ai. Dán mã này vào GitHub Secret <b>REN_DEVICE_ID</b> thì bot Telegram nhắc được lúc 21h.</div>'
+       : '<button class="btn gh" data-a="syncon">Bật đồng bộ</button>'
+         +'<button class="btn gh" data-a="synclink">Nối vào máy đã có (nhập mã)</button>'
+         +'<div class="tip">Đang TẮT — dữ liệu chỉ nằm trong trình duyệt này. Bật thì toàn bộ tiến độ (gồm giấc ngủ và ghi chú) được gửi lên máy chủ riêng: có backup, mở được ở máy khác, và bot Telegram nhắc được mày lúc 21h kể cả khi không mở app.</div>')
+   +'</div>'
    +'<div class="blk"><span class="lb">Dữ liệu</span>'
      +'<button class="btn gh" data-a="export">Xuất bản sao .json</button>'
      +'<button class="btn gh" data-a="import">Nhập từ file .json</button>'
      +'<input type="file" id="imp" accept=".json,application/json" hidden>'
      +'<button class="btn dg" data-a="wipe">Xoá sạch, làm lại</button>'
-     +'<div class="tip">Dữ liệu nằm trong trình duyệt này và dùng chung với bản Rèn cũ nếu mày từng nhập liệu. Đổi máy là mất — thỉnh thoảng xuất một bản sao.</div></div>'
+     +'<div class="tip">Dữ liệu nằm trong trình duyệt này và dùng chung với bản Rèn cũ nếu mày từng nhập liệu. '+(SY.cfg.on?'Đã có bản trên máy chủ, nhưng xuất thêm một bản .json vẫn chắc hơn.':'Đổi máy là mất — thỉnh thoảng xuất một bản sao, hoặc bật Đồng bộ ở trên.')+'</div></div>'
    +'<button class="btn" data-a="close">Xong</button>';
 }
 
@@ -552,17 +677,44 @@ document.addEventListener("click",function(e){
     if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){toast("Đã copy — gửi cho "+(S.pact.who||"người làm chứng")+".")},function(){alert(txt)});
     else alert(txt);
     return}
+  if(a==="syncon"){SY.cfg={id:uuid4(),on:true,at:0};SY.write();SY.push();drawSheet();
+    toast("Đã bật đồng bộ. Mã hiện ngay bên dưới.");return}
+  if(a==="synclink"){
+    var m=prompt("Dán mã đồng bộ lấy ở máy cũ (Cài đặt → Đồng bộ → Copy mã):","");
+    if(m==null)return;
+    m=String(m).trim().toLowerCase();
+    if(!RE_ID.test(m)){toast("Mã không đúng dạng — phải là chuỗi uuid 36 ký tự.");return}
+    SY.cfg={id:m,on:true,at:0};SY.write();drawSheet();SY.boot();return}
+  if(a==="synccopy"){
+    if(navigator.clipboard)navigator.clipboard.writeText(SY.cfg.id).then(function(){toast("Đã copy mã đồng bộ.")},function(){alert(SY.cfg.id)});
+    else alert(SY.cfg.id);
+    return}
+  if(a==="syncnow"){toast("Đang đồng bộ…");SY.boot();return}
+  if(a==="syncoff"){SY.cfg.on=false;SY.write();drawSheet();
+    toast("Đã tắt. Bản trên máy chủ vẫn còn nguyên.");return}
+  if(a==="syncdel"){
+    if(b.dataset.arm){
+      var did=SY.cfg.id;
+      SY.cfg={id:"",on:false,at:0};SY.write();drawSheet();
+      SY.rpc("ren_forget",{p_device:did},function(err){
+        toast(err?"Đã tắt ở máy này, nhưng chưa xoá được trên máy chủ.":"Đã tắt và xoá sạch trên máy chủ.")});
+    }else{b.dataset.arm="1";b.textContent="Chắc chưa? Bấm lần nữa là xoá";
+      setTimeout(function(){if(b.isConnected){delete b.dataset.arm;b.textContent="Tắt và xoá bản trên máy chủ"}},3000)}
+    return}
   if(a==="export"){
-    var clean=JSON.parse(JSON.stringify(S));
-    for(var k in clean.days){delete clean.days[k]._draft;delete clean.days[k]._mdraft}
-    var data=JSON.stringify(clean,null,2), fn="ren-backup-"+today()+".json";
+    var data=JSON.stringify(snapshot(),null,2), fn="ren-backup-"+today()+".json";
     if(window.claude&&window.claude.downloads)window.claude.downloads.save({filename:fn,data:data})
       .then(function(){toast("Đã lưu bản sao.")},function(err){toast(err&&err.code==="declined"?"Thôi cũng được — nhưng nhớ backup sớm.":"Không lưu được.")});
     else{var bl=new Blob([data],{type:"application/json"}),al=document.createElement("a");al.href=URL.createObjectURL(bl);al.download=fn;al.click();URL.revokeObjectURL(al.href)}
     return}
   if(a==="import"){var f=document.getElementById("imp");if(f)f.click();return}
   if(a==="wipe"){
-    if(b.dataset.arm){localStorage.removeItem(KEY);localStorage.removeItem(OLD);S=JSON.parse(JSON.stringify(DEF));UI=null;drawSheet();render();toast("Sạch. Làm lại từ đầu.")}
+    if(b.dataset.arm){
+      /* Xoá cả bản trên máy chủ, nếu không thì lần mở app sau `mergeState` thấy máy này
+         không còn việc nào mà máy chủ còn → lấy nguyên bản cũ về, dữ liệu "sống lại". Giữ
+         nguyên mã đồng bộ để bot Telegram vẫn nhắc được vòng mới. */
+      if(SY.cfg.on&&SY.cfg.id){clearTimeout(SY.timer);SY.rpc("ren_forget",{p_device:SY.cfg.id},function(){});SY.cfg.at=0;SY.write()}
+      localStorage.removeItem(KEY);localStorage.removeItem(OLD);S=JSON.parse(JSON.stringify(DEF));UI=null;drawSheet();render();toast("Sạch. Làm lại từ đầu.")}
     else{b.dataset.arm="1";b.textContent="Chắc chưa? Bấm lần nữa là mất hết";setTimeout(function(){if(b.isConnected){delete b.dataset.arm;b.textContent="Xoá sạch, làm lại"}},3000)}
     return}
 });
@@ -604,6 +756,12 @@ if(window.matchMedia){var mq=window.matchMedia("(prefers-color-scheme:dark)");
   if(mq.addEventListener)mq.addEventListener("change",function(){if(S.theme==="auto"){applyTheme();if(UI)drawSheet()}})}
 new MutationObserver(function(){if(S.theme==="auto")applyTheme()}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
 render();
+/* Kéo–trộn–đẩy lúc mở app; đẩy nốt khi rời trang (đang chờ 2,5 giây mà đóng tab là mất);
+   thử lại khi có mạng trở lại. `quiet` để không nhả toast mỗi lần mở app. */
+SY.boot(true);
+addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="hidden"&&SY.cfg.on&&SY.cfg.id){clearTimeout(SY.timer);SY.push()}});
+addEventListener("online",function(){if(SY.msg)SY.queue()});
 </script>
 <script>
 if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});

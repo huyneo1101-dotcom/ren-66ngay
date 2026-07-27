@@ -1,0 +1,38 @@
+name: Nhắc kỷ luật qua Telegram
+
+# 21:00 giờ VN mỗi ngày — giờ chốt ngày, còn kịp làm nốt việc, và trước cụm tin 22:00 của
+# Điểm Tin nên không dồn hai thông báo vào cùng một lúc.
+# ⚠️ Cron của GitHub Actions KHÔNG đúng giờ tuyệt đối: hàng chờ đông thì trễ 5–15 phút, cá biệt
+# hơn. Đừng chỉnh phút ở đây để mong nhắc đúng 21:00:00 — không có cách nào ép được.
+on:
+  schedule:
+    - cron: '0 14 * * *'      # 14:00 UTC = 21:00 Asia/Ho_Chi_Minh (VN không có giờ mùa hè)
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Chỉ in ra log, không gửi thật'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notify-telegram
+  cancel-in-progress: false
+
+jobs:
+  nhac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7   # cùng phiên bản với các workflow đang chạy của Điểm Tin
+      - name: Gửi tin nhắc
+        env:
+          # Dùng CHUNG bot với Điểm Tin Thế Giới — Huy chỉ phải quản một token.
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Mã đồng bộ lấy trong app: Cài đặt → Đồng bộ & nhắc Telegram → Copy mã.
+          # Là secret vì ai biết mã là đọc được toàn bộ nhật ký (xem docs/supabase-setup.sql).
+          REN_DEVICE_ID: ${{ secrets.REN_DEVICE_ID }}
+          DRY_RUN: ${{ inputs.dry && '1' || '' }}
+        run: python3 .github/scripts/send_telegram.py
