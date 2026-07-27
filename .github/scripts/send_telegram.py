@@ -287,12 +287,27 @@ def nut(state, now):
 
 # ── gửi ──────────────────────────────────────────────────────────────────────────────────
 def api(token, method, payload):
+    """Gọi Bot API. Lỗi HTTP KHÔNG raise trần — trả về chính body lỗi của Telegram.
+
+    VÌ SAO (vấp thật 27/07/2026): `urlopen` raise `HTTPError` và thân phản hồi đi theo exception,
+    nên log chỉ còn `HTTP Error 400: Bad Request` — vô dụng, vì 400 của Telegram có tới hàng chục
+    nguyên nhân (chat not found · can't parse entities · button data quá dài · message not
+    modified…). Mà `description` giải thích chính xác hỏng gì thì lại nằm trong cái body vừa bị
+    vứt đi. Đọc nó ra là khác nhau giữa "sửa trong một phút" và "ngồi đoán".
+    """
     req = urllib.request.Request(
         API.format(token=token, method=method),
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.loads(r.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")[:400]
+        try:
+            return json.loads(raw)          # Telegram trả JSON có ok/error_code/description
+        except ValueError:
+            return {"ok": False, "error_code": e.code, "description": raw}
 
 
 def send_all(token, chats, msgs, markup=None):
