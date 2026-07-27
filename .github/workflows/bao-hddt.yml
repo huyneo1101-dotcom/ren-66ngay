@@ -1,0 +1,128 @@
+name: Báo HĐĐT qua Telegram
+
+# Đường gửi Telegram cho routine PHÁT HÀNH HOÁ ĐƠN ĐIỆN TỬ (KiotViet, 2 hộ 114 + ĐQ) —
+# routine chạy 21:30 giờ VN trên máy Huy, KHÔNG chạy ở đây. Workflow này chỉ làm một việc:
+# nhận nội dung rồi bắn sang Telegram.
+#
+# VÌ SAO Ở REPO RÈN chứ không phải repo Điểm Tin (Huy chốt 27/07/2026):
+#   "từ giờ đừng làm gì động đến diemtin_bot nữa, trừ những việc liên quan đến điểm tin."
+# Đo thật cùng ngày: `TELEGRAM_CHAT_ID` của repo Điểm Tin chứa HAI chat riêng — "Huy D"
+# VÀ "Jay Lâm" (người ngoài từng nhắn cho bot hỏi-đáp). Bản tin thời sự gửi nhiều người là
+# đúng thiết kế; DOANH SỐ hai hộ kinh doanh thì tuyệt đối không. Bot của Rèn là bot RIÊNG,
+# đã tách khỏi bot Điểm Tin từ 27/07/2026 đúng vì lớp lý do này.
+#
+# VÌ SAO PHẢI ĐI VÒNG QUA GITHUB thay vì gửi thẳng từ máy: token bot chỉ tồn tại dưới dạng
+# GitHub Secret, không có bản local và GitHub không cho đọc ngược ra. Cho máy gọi
+# `gh workflow run` là cách dùng lại đúng token đó mà không phải nhân thêm một bản sao
+# secret nữa trên đĩa — càng nhiều bản sao càng nhiều chỗ rò.
+#
+# Gọi từ máy:
+#   gh workflow run bao-hddt.yml -R huyneo1101-dotcom/ren-66ngay -f noi_dung="..."
+#
+# CHỈ workflow_dispatch — không cron. Nó là cái loa, không phải cái đồng hồ.
+
+on:
+  workflow_dispatch:
+    inputs:
+      noi_dung:
+        description: 'Nội dung tin nhắn (hỗ trợ thẻ HTML: <b> <i> <code>)'
+        required: false
+        type: string
+      kiem_kenh:
+        description: 'Chỉ SOI xem TELEGRAM_CHAT_ID gồm những ai — KHÔNG gửi gì'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bao-hddt
+  cancel-in-progress: false
+
+jobs:
+  bao:
+    runs-on: ubuntu-latest
+    steps:
+      # Soi ai đang nhận tin. KHÔNG suy từ cơ chế — phải ĐO. Bài học 27/07/2026: Zim khẳng
+      # định "người ngoài không nhận được" mà không kiểm, đo ra thì sai.
+      # CHỈ IN type/title/số thành viên — KHÔNG in chat_id.
+      - name: Soi kênh nhận
+        if: ${{ inputs.kiem_kenh }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -uo pipefail
+          echo "Số chat trong TELEGRAM_CHAT_ID: $(echo "${TELEGRAM_CHAT_ID}" | tr ',' '\n' | grep -c .)"
+          for chat in $(echo "${TELEGRAM_CHAT_ID}" | tr ',' ' '); do
+            curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChat" \
+                 --data-urlencode "chat_id=${chat}" -o /tmp/chat.json
+            echo "--- một chat ---"
+            python3 -c "import json;d=json.load(open('/tmp/chat.json')).get('result',{});print('  loai:',d.get('type'));print('  ten :',d.get('title') or ((d.get('first_name') or '')+' '+(d.get('last_name') or '')).strip())"
+            curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMemberCount" \
+                 --data-urlencode "chat_id=${chat}" -o /tmp/count.json
+            python3 -c "import json;d=json.load(open('/tmp/count.json'));print('  so thanh vien:',d.get('result','(khong lay duoc)'))"
+          done
+          echo
+          echo "ĐỌC KẾT QUẢ: loai=private => chat RIÊNG 1-1."
+          echo "             loai=group/supergroup/channel => CÓ người khác đọc được."
+
+      - name: Gửi Telegram
+        if: ${{ !inputs.kiem_kenh }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_OWNER_CHAT: ${{ secrets.TELEGRAM_OWNER_CHAT }}
+          NOI_DUNG: ${{ inputs.noi_dung }}
+        run: |
+          set -uo pipefail
+
+          # KHÔNG "thiếu secret thì thoát êm". Repo này ĐÃ cắm secret, nên thiếu = HỎNG chứ
+          # không phải "chưa cấu hình" — thoát êm ở đây đẻ ra workflow xanh trong khi Huy
+          # không nhận được gì. Đúng lớp lỗi đã bắt được ở chính repo Rèn 27/07/2026.
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then
+            echo "::error::Thiếu TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID — không gửi được."
+            exit 1
+          fi
+
+          # ⛔ CHỈ GỬI CHO MỘT NGƯỜI — KHÔNG lặp qua TELEGRAM_CHAT_ID.
+          # Đây là số liệu kinh doanh, không phải bản tin. Kể cả khi danh sách hiện chỉ có
+          # Huy, vẫn giữ chốt này: mai kia thêm người vào secret là rò ngay mà không ai hay.
+          MUC_TIEU="${TELEGRAM_OWNER_CHAT}"
+          if [ -z "${MUC_TIEU}" ]; then
+            MUC_TIEU=$(echo "${TELEGRAM_CHAT_ID}" | cut -d',' -f1 | tr -d ' ')
+          fi
+          if [ -z "${MUC_TIEU}" ]; then
+            echo "::error::Không xác định được chat đích."
+            exit 1
+          fi
+
+          # In TÊN người nhận mỗi lần chạy — chốt kiểm được bằng mắt: hôm nào secret bị đảo
+          # thứ tự hay thêm người, log hiện tên lạ ngay. Không in chat_id (là secret).
+          curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChat" \
+               --data-urlencode "chat_id=${MUC_TIEU}" -o /tmp/dich.json
+          LOAI=$(python3 -c "import json;print(json.load(open('/tmp/dich.json')).get('result',{}).get('type',''))")
+          TEN=$(python3 -c "import json;d=json.load(open('/tmp/dich.json')).get('result',{});print(d.get('title') or ((d.get('first_name') or '')+' '+(d.get('last_name') or '')).strip())")
+          echo "Người nhận: ${TEN} (loại: ${LOAI})"
+
+          # Số liệu kinh doanh TUYỆT ĐỐI không được rơi vào nhóm/kênh nhiều người.
+          if [ "${LOAI}" != "private" ]; then
+            echo "::error::Chat đích loại '${LOAI}' — KHÔNG phải chat riêng. Từ chối gửi số liệu kinh doanh."
+            exit 1
+          fi
+
+          ma=$(curl -sS -o /tmp/tg-resp.json -w '%{http_code}' \
+                 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                 --data-urlencode "chat_id=${MUC_TIEU}" \
+                 --data-urlencode "text=${NOI_DUNG}" \
+                 -d "parse_mode=HTML" \
+                 -d "disable_web_page_preview=true" || echo "000")
+          echo "HTTP ${ma}"
+          if [ "${ma}" != "200" ]; then
+            echo "  phản hồi: $(cat /tmp/tg-resp.json 2>/dev/null | head -c 500)"
+            echo "::error::Không gửi được."
+            exit 1
+          fi
+          echo "Đã gửi xong — 1 người nhận."
