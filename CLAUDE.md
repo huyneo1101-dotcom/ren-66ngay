@@ -67,8 +67,16 @@ Dùng chung project với Điểm Tin Thế Giới (`ltmlueqkajqmduoqghdf`).
 
 ## Telegram
 
-Dùng **chung bot với Điểm Tin Thế Giới** — Huy chỉ quản một token. Secret cần đặt cho repo này:
-`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `REN_DEVICE_ID`.
+Dùng **chung bot với Điểm Tin Thế Giới** (`@diemtin24h_bot`) — Huy chỉ quản một token. Secret
+cần đặt cho repo này: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `REN_DEVICE_ID`.
+
+**Trạng thái cấu hình (27/07/2026):** bảng `ren_state` + ba hàm đã tạo trên project
+`ltmlueqkajqmduoqghdf` (đã kiểm: push/pull/forget chạy, đọc thẳng bảng bị chặn 401, mã sai định
+dạng bị chặn 400). Secret `REN_DEVICE_ID` và `TELEGRAM_CHAT_ID` đã đặt.
+
+Bản sao mã đồng bộ để ở `/Users/Huy/Claude/.ren66-device-id` (chmod 600, **ngoài repo** vì repo
+này public). Mất file đó mà cũng mất máy thì mất luôn nhật ký trên server — không có đường
+khôi phục, vì mã chính là chìa khoá duy nhất.
 
 Ba chốt an toàn trong `send_telegram.py`, giữ nguyên tinh thần khi sửa:
 
