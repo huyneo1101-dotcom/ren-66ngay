@@ -11,6 +11,7 @@ App web một-file. Không build step, không framework, không package.json. S�
 | Bản thiết kế cũ (5 khu vực, xanh lá) | `v-xanh-cu.html` — **dùng chung `localStorage`**, KHÔNG có phần đồng bộ |
 | Lược đồ + mô hình bảo mật Supabase | `docs/supabase-setup.sql` |
 | Script nhắc Telegram | `.github/scripts/send_telegram.py` |
+| Cắm token Telegram | `.github/scripts/setup-telegram.py` — chạy một lần, xem docstring |
 | Lịch nhắc | `.github/workflows/notify-telegram.yml` — 14:00 UTC = 21:00 VN |
 
 Dữ liệu: `localStorage["ren.v2"]` (state), `localStorage["ren.sync"]` (mã đồng bộ — **để riêng
@@ -64,6 +65,12 @@ Dùng chung project với Điểm Tin Thế Giới (`ltmlueqkajqmduoqghdf`).
    xét trước: bên nào chưa có việc nào thì lấy nguyên cấu hình của bên kia.
 4. **Cron GitHub Actions KHÔNG đúng giờ** — hàng chờ đông là trễ 5–15 phút, cá biệt hơn. Đừng
    chỉnh phút trong `cron:` để mong nhắc đúng 21:00:00; không ép được.
+5. **"Thiếu secret → thoát êm" mà gộp cả nắm thì nó CHE MẤT sự cố mất secret.** Bắt được thật:
+   `TELEGRAM_BOT_TOKEN` chưa từng được đặt, mà run 30250807802 vẫn *success* trong 10 giây —
+   mốc 21:00 chạy xanh hằng ngày, không một tin nào tới, không ai biết. Vì thế `main()` nay tách
+   **chưa cấu hình** (không có secret nào → êm) khỏi **cấu hình gãy** (có cái này thiếu cái kia →
+   `exit 1`, job đỏ). Thêm secret mới thì phải thêm vào cả danh sách `thieu` trong `main()`, nếu
+   không nó lại lọt vào vùng câm.
 
 ## Telegram
 
@@ -78,9 +85,16 @@ cặp người-bot. Nhưng bot mới **không nhắn trước được**: chưa 
 đỏ và thấy ngay — khác hẳn ba chốt "thoát êm" ở trên, vốn chỉ êm khi *chưa cấu hình*, chứ đã
 cấu hình mà gửi hỏng thì phải kêu.
 
+**Cắm token:** `python3 .github/scripts/setup-telegram.py` — hỏi token bằng `getpass` (không in
+ra màn hình), kiểm `getMe`, **chặn nếu dán nhầm token @diemtin24h_bot**, tự dò `chat_id`, gửi tin
+thử, `gh secret set` qua stdin, rồi bấm chạy workflow thật và chờ kết quả. Gửi thử hỏng thì
+**không đặt secret nào cả** — đặt vào là repo mang cấu hình chưa từng chạy được.
+
 **Trạng thái cấu hình (27/07/2026):** bảng `ren_state` + ba hàm đã tạo trên project
 `ltmlueqkajqmduoqghdf` (đã kiểm: push/pull/forget chạy, đọc thẳng bảng bị chặn 401, mã sai định
 dạng bị chặn 400). Secret `REN_DEVICE_ID` và `TELEGRAM_CHAT_ID` đã đặt.
+⛔ **`TELEGRAM_BOT_TOKEN` CHƯA ĐẶT** — bot riêng chưa được tạo. Tới khi Huy chạy `setup-telegram.py`
+thì mốc 21:00 hằng ngày sẽ ĐỎ (cố ý, xem bẫy số 5). Đỏ = "chưa cắm token", không phải hỏng mới.
 
 Bản sao mã đồng bộ để ở `/Users/Huy/Claude/.ren66-device-id` (chmod 600, **ngoài repo** vì repo
 này public). Mất file đó mà cũng mất máy thì mất luôn nhật ký trên server — không có đường
@@ -88,7 +102,8 @@ khôi phục, vì mã chính là chìa khoá duy nhất.
 
 Ba chốt an toàn trong `send_telegram.py`, giữ nguyên tinh thần khi sửa:
 
-1. Thiếu secret → `exit 0` êm, không làm đỏ workflow ("chưa cấu hình" ≠ "hỏng").
+1. **Không** có secret nào → `exit 0` êm ("chưa cấu hình" ≠ "hỏng"). Nhưng có secret mà thiếu
+   mảnh → `exit 1` cho ĐỎ; mất `REN_DEVICE_ID` thì vẫn gửi tin rút gọn trước rồi mới đỏ.
 2. Supabase hỏng / chưa có dòng nào → **vẫn gửi** một tin nhắc rút gọn. App kỷ luật mà im lặng vì
    hạ tầng là hỏng đúng cái việc nó sinh ra để làm.
 3. State cũ quá `STALE_HOURS` (mặc định 36) → gắn cảnh báo lên đầu tin. Báo "chuỗi 12 ngày" bằng

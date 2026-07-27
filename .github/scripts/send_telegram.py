@@ -7,7 +7,7 @@ Chạy:
     DRY_RUN=1 REN_STATE_FILE=/tmp/state.json python3 .github/scripts/send_telegram.py   # xem trước, không cần mạng
 
 Biến môi trường:
-    TELEGRAM_BOT_TOKEN  bắt buộc (trừ DRY_RUN) — token @BotFather, DÙNG CHUNG với Điểm Tin
+    TELEGRAM_BOT_TOKEN  bắt buộc (trừ DRY_RUN) — token @BotFather, BOT RIÊNG của Rèn
     TELEGRAM_CHAT_ID    bắt buộc (trừ DRY_RUN) — nhiều nơi nhận thì ngăn bằng dấu phẩy
     REN_DEVICE_ID       bắt buộc — mã đồng bộ lấy trong app: Cài đặt → Đồng bộ → Copy mã
     SUPABASE_URL/KEY    tuỳ chọn — mặc định là project dùng chung với Điểm Tin
@@ -21,8 +21,9 @@ có bản đồng bộ thì tin nhắc chỉ đếm được "hôm nay ngày th�
 hôm qua có tick hay không — tức là nhắc mù. Xem docs/supabase-setup.sql.
 
 BA CHỐT AN TOÀN (chép tinh thần từ send_telegram.py của Điểm Tin):
- 1. Thiếu secret Telegram / thiếu REN_DEVICE_ID → thoát êm exit 0, KHÔNG làm đỏ workflow.
-    Đó là "chưa cấu hình", không phải hỏng.
+ 1. **CHƯA CẤU HÌNH** (không có secret nào trong ba cái) → thoát êm exit 0. Nhưng **CẤU HÌNH GÃY**
+    (có secret này, mất secret kia) → exit 1 cho workflow ĐỎ. Xem `main()` để biết vì sao phải
+    tách hai ca này — thoát êm cả nắm là kiểu hỏng đã bắt được thật ngày 27/07/2026.
  2. Supabase hỏng / chưa có dòng nào → VẪN GỬI một tin nhắc rút gọn rồi exit 0. App kỷ luật mà
     im lặng vì hạ tầng là hỏng đúng cái việc nó sinh ra để làm; thà nhắc thiếu số còn hơn không nhắc.
  3. State cũ quá STALE_HOURS → gắn cảnh báo lên đầu tin. Báo "chuỗi 12 ngày" bằng dữ liệu ba
@@ -286,17 +287,31 @@ def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chats = [c.strip() for c in os.environ.get("TELEGRAM_CHAT_ID", "").split(",") if c.strip()]
     device = os.environ.get("REN_DEVICE_ID", "").strip().lower()
+    state_file = os.environ.get("REN_STATE_FILE", "").strip()
 
-    if not dry and (not token or not chats):
-        print("THIẾU TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID — bỏ qua, KHÔNG coi là lỗi.",
-              file=sys.stderr)
-        return 0
-    if not device and not os.environ.get("REN_STATE_FILE"):
-        print("THIẾU REN_DEVICE_ID (mã đồng bộ trong app) — chưa cấu hình xong, bỏ qua.",
-              file=sys.stderr)
-        return 0
+    # ── CHƯA CẤU HÌNH ≠ CẤU HÌNH GÃY ─────────────────────────────────────────────────────
+    # Thoát êm chỉ đúng ở vế đầu: repo mới, chưa ai đặt secret lần nào — không có gì để hỏng.
+    # Đã có dấu vết cấu hình mà thiếu một mảnh thì đó là SỰ CỐ (secret bị xoá, bot bị /revoke,
+    # gõ nhầm tên secret), và im lặng ở đây là kiểu hỏng tệ nhất: mốc 21:00 chạy XANH hằng ngày
+    # mà không một tin nào tới. Bắt được thật 27/07/2026 — TELEGRAM_BOT_TOKEN chưa từng được
+    # đặt, run 30250807802 vẫn success 10 giây, không ai biết cho tới khi soi log.
+    thieu = ([] if token else ["TELEGRAM_BOT_TOKEN"]) \
+        + ([] if chats else ["TELEGRAM_CHAT_ID"]) \
+        + ([] if (device or state_file) else ["REN_DEVICE_ID"])
 
-    state, updated_at = fetch_state(device)
+    if not dry and thieu:
+        if not (token or chats or device):
+            print("Chưa đặt secret nào (TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID/REN_DEVICE_ID) — "
+                  "chưa cấu hình, bỏ qua, KHÔNG coi là lỗi.", file=sys.stderr)
+            return 0
+        print("❌ CẤU HÌNH GÃY — đã có secret nhưng THIẾU: " + ", ".join(thieu)
+              + "\n   Đặt lại bằng: python3 .github/scripts/setup-telegram.py", file=sys.stderr)
+        if not token or not chats:
+            # Không còn đường gửi → chỉ còn cách kêu bằng job đỏ.
+            return 1
+        # Còn gửi được thì VẪN GỬI tin rút gọn (chốt 2), nhưng cuối cùng vẫn để đỏ.
+
+    state, updated_at = (fetch_state(device) if (device or state_file) else (None, None))
     msgs = build(state, updated_at, datetime.datetime.now(VN))
     msgs = [m if len(m) <= MAX_LEN else m[:MAX_LEN - 1] + "…" for m in msgs]
 
@@ -306,7 +321,9 @@ def main():
             print(f"\n----- message {i}/{len(msgs)} ({len(m)} ký tự) -----")
             print(m)
         return 0
-    return send_all(token, chats, msgs)
+    # `thieu` còn sót ở đây nghĩa là mất REN_DEVICE_ID: tin vẫn gửi được (bản rút gọn) nhưng
+    # cấu hình đang gãy — gửi xong rồi mới để job đỏ, không nuốt.
+    return send_all(token, chats, msgs) or (1 if thieu else 0)
 
 
 if __name__ == "__main__":
