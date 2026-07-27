@@ -28,6 +28,10 @@ có chủ đích**, xem dưới).
    `/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc`.
    Script nhắc thì chạy `DRY_RUN=1 REN_STATE_FILE=<file.json> python3 .github/scripts/send_telegram.py`
    (đọc file thay vì gọi Supabase, không cần mạng, không cần secret).
+5. **Sửa chữ trong tin nhắn xong thì soi lại bằng máy, đừng đọc bằng mắt:**
+   `DRY_RUN=1 REN_STATE_FILE=<file.json> python3 .github/scripts/send_telegram.py | python3 .github/scripts/check_html.py`
+   — bắt thẻ lồng nhau, thẻ Telegram không nhận, thẻ chưa đóng, và `& < >` trần chưa escape.
+   Chính nó bắt được bẫy số 1 bên dưới, thứ mà đọc lướt không thấy.
 
 ## Đồng bộ Supabase — vì sao thiết kế như vậy
 
