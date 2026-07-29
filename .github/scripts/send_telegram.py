@@ -200,9 +200,17 @@ def build(state, updated_at, now):
     warn = stale_line(updated_at, now)
 
     if state is None:
+        # Ba nguyên nhân, và ca GIỮA là ca đã vấp thật 29/07/2026 — phải gọi tên ra, không gộp
+        # vào "chưa bật Đồng bộ": trong app có hai nút cạnh nhau, "Bật đồng bộ" sinh mã MỚI còn
+        # "Nối vào máy đã có" mới dùng mã cũ. Bấm nhầm cái đầu thì app báo "đã bật" và dữ liệu
+        # lên máy chủ đàng hoàng, nhưng nằm dưới một mã khác với REN_DEVICE_ID — bot đọc mã cũ
+        # thấy rỗng nên nhắc mù, mà nhìn app thì mọi thứ đều xanh. Hỏng câm, không tự lộ ra.
         return [f"🔥 <b>Rèn — nhắc chốt ngày</b>\n"
-                f"Không kéo được tiến độ (app chưa bật Đồng bộ, hoặc máy chủ đang hỏng). "
-                f"Cứ mở app chốt ngày đã.{link}"]
+                f"Không kéo được tiến độ. Ba khả năng: app chưa bật Đồng bộ · "
+                f"<b>mã trong app KHÁC mã đang cắm ở đây</b> (bấm nhầm “Bật đồng bộ” thay vì "
+                f"“Nối vào máy đã có” là sinh mã mới) · hoặc máy chủ đang hỏng.\n"
+                f"Kiểm: Cài đặt → Đồng bộ → <b>Copy mã</b>, rồi cắm lại vào Secret "
+                f"<code>REN_DEVICE_ID</code>. Trước mắt cứ mở app chốt ngày đã.{link}"]
 
     r = Ren(state)
     if not r.start or not r.need:

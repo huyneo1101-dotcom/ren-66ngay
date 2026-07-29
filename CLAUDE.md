@@ -109,13 +109,26 @@ project `ltmlueqkajqmduoqghdf` (đã kiểm: push/pull/forget/tick chạy, đọ
 mã sai định dạng bị chặn 400). **Cả ba secret đã đặt** — `TELEGRAM_BOT_TOKEN` cắm lúc 21:08, token
 hợp lệ (`getUpdates` trả ok).
 
-⛔ **Còn HAI việc phải làm trên thiết bị, chưa xong thì tin nhắc vẫn đỏ:**
-1. **Bấm Start với bot Rèn** trên Telegram — hiện `sendMessage` trả `400 chat not found`.
-2. **Bật Đồng bộ trong app Rèn**, với mã trùng `REN_DEVICE_ID` (bản sao ở
-   `/Users/Huy/Claude/.ren66-device-id`, 4 ký tự cuối `d52e`). Đo thật: bảng `ren_state` đang
-   **rỗng hoàn toàn**, chưa có dòng nào — nên tin nhắc chỉ ra được bản rút gọn "không kéo được
-   tiến độ", và **nút tick không hiện** (`nut()` trả None khi không có state, cố ý: không có
-   danh sách việc thì không biết tick cái gì).
+✅ **ĐÃ XONG CẢ HAI (29/07/2026):** bot đã được bấm Start (tin gửi thành công từ 27/07), và
+Đồng bộ đã bật — `ren_state` có dòng thật, bot đọc được 3 việc, ngày bắt đầu 2026-07-29.
+Mã đang dùng: **`…b3f1`** (bản sao ở `/Users/Huy/Claude/.ren66-device-id`).
+
+⚠️ **BẪY ĐÃ VẤP THẬT 29/07 — hai nút cạnh nhau làm hai việc khác hẳn:**
+- **“Bật đồng bộ”** → sinh mã **MỚI** (`uuid4()` trong `index.html`, nhánh `syncon`).
+- **“Nối vào máy đã có (nhập mã)”** → dùng mã sẵn có (nhánh `synclink`).
+
+Bấm nhầm cái đầu thì app báo *“Đã bật đồng bộ”*, dữ liệu lên máy chủ đàng hoàng — **nhưng nằm
+dưới một mã khác với `REN_DEVICE_ID`**. Bot đọc mã cũ, thấy rỗng, nhắc mù; nhìn app thì mọi thứ
+đều xanh. **Hỏng câm, không tự lộ ra.** Hôm đó sinh liền hai mã mồ côi (`…4395`, `…b3f1`) trong
+lúc mã đang cắm là `…d52e` — rỗng.
+
+Vá bằng cơ chế: `build()` khi `state is None` nay **gọi tên thẳng ca này** và chỉ đường
+(Cài đặt → Copy mã → cắm lại Secret), thay vì chỉ nói chung chung "chưa bật Đồng bộ". Ba nguyên
+nhân khác nhau mà gộp một câu thì câu đó không giúp gì lúc thật sự hỏng.
+
+Đổi mã thì phải đổi ở **CẢ HAI** nơi: `gh secret set REN_DEVICE_ID -R huyneo1101-dotcom/ren-66ngay`
+**và** file `/Users/Huy/Claude/.ren66-device-id`. Quên một chỗ là lần sau đọc file ra lại cắm nhầm.
+Còn cam kết trong `ren_vows` thì phải `update … set device = <mã mới>`, không thì mồ côi.
 
 Bản sao mã đồng bộ để ở `/Users/Huy/Claude/.ren66-device-id` (chmod 600, **ngoài repo** vì repo
 này public). Mất file đó mà cũng mất máy thì mất luôn nhật ký trên server — không có đường
