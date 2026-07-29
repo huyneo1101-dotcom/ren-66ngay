@@ -38,6 +38,7 @@ import urllib.request
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from send_telegram import (  # noqa: E402
     MAX_LEN, SB_KEY, SB_URL, VN, api, build, fetch_state, nut)
+from vow import rpc as vow_rpc, tin_sau_khi_bam  # noqa: E402
 
 
 def chats_cho_phep():
@@ -170,6 +171,59 @@ def bao_loi(token, chat, text):
         print(f"không gửi được tin báo lỗi: {e}", file=sys.stderr)
 
 
+def xu_ly_vow(token, device, cb_id, chat, msg_id, phan, dry):
+    """Nút của VIỆC ĐÃ HẸN: `ren:vow:<id>:<xong|bo|mo>`. Trả 0 nếu ổn, 1 nếu hỏng thật.
+
+    Đi chung bot và chung vòng poll với nút tick của Rèn là BẮT BUỘC, không phải cho gọn:
+    `getUpdates` chỉ chấp nhận MỘT người đọc — dựng thêm một script poll nữa trên cùng token thì
+    hai bên nuốt update của nhau, Huy bấm nút thấy im rồi bấm lại (xem cảnh báo đầu file).
+
+    Ghi qua RPC `ren_vow_set`, tuyệt đối không đọc-sửa-ghi phía script: hai lịch cron trùng phút
+    sẽ đọc cùng một trạng thái cũ rồi đè nhau.
+    """
+    try:
+        vid = int(phan[2])
+    except ValueError:
+        print(f"callback vow id lạ, bỏ qua: {phan}", file=sys.stderr)
+        return 0
+    trang_thai = phan[3]
+    if trang_thai not in ("xong", "bo", "mo"):
+        print(f"callback vow trạng thái lạ, bỏ qua: {phan}", file=sys.stderr)
+        return 0
+
+    if dry:
+        print(f"[DRY_RUN] sẽ ren_vow_set(device, {vid}, {trang_thai}) rồi sửa tin {msg_id}")
+        return 0
+
+    try:
+        kq = vow_rpc("ren_vow_set",
+                     {"p_device": device, "p_id": vid, "p_trang_thai": trang_thai})
+    except RuntimeError as e:
+        print(f"ren_vow_set hỏng: {e}", file=sys.stderr)
+        tra_loi(token, cb_id, "Không ghi được, xem tin nhắn báo lỗi")
+        bao_loi(token, chat,
+                f"⚠️ <b>Việc đã hẹn — không ghi được</b>\n#{vid} → {trang_thai}.\n"
+                f"<code>{e}</code>\nBấm lại sau, hoặc ghi tay vào file buổi.")
+        return 1
+
+    kq = (kq[0] if isinstance(kq, list) else kq) or {}
+    kq["id"] = vid
+    text, kb = tin_sau_khi_bam(kq, trang_thai)
+    tra_loi(token, cb_id, {"xong": "Đã ghi: đã làm", "bo": "Đã ghi: chưa làm",
+                           "mo": "Đã mở lại"}[trang_thai])
+    try:
+        res = api(token, "editMessageText",
+                  {"chat_id": chat, "message_id": msg_id, "text": text,
+                   "parse_mode": "HTML", "disable_web_page_preview": True,
+                   "reply_markup": kb})
+        if not res.get("ok"):
+            print(f"editMessageText lỗi: {res.get('description')}", file=sys.stderr)
+    except Exception as e:                                    # noqa: BLE001
+        print(f"editMessageText lỗi: {e}", file=sys.stderr)
+    print(f"vow #{vid} → {trang_thai} (đã giữ {kq.get('giu')}/{kq.get('tong')})")
+    return 0
+
+
 def main():
     dry = os.environ.get("DRY_RUN") == "1"
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
@@ -198,6 +252,10 @@ def main():
     rc = 0
     for cb_id, chat, msg_id, data in nuts:
         phan = data.split(":")
+        # Nút của VIỆC ĐÃ HẸN đi trước: nó có 4 phần, còn nút chốt ngày của Rèn có 3.
+        if len(phan) == 4 and phan[1] == "vow":
+            rc = xu_ly_vow(token, device, cb_id, chat, msg_id, phan, dry) or rc
+            continue
         if len(phan) != 3 or phan[1] not in ("xong", "bo"):
             print(f"callback lạ, bỏ qua: {data}", file=sys.stderr)
             continue

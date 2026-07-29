@@ -11,6 +11,7 @@ App web một-file. Không build step, không framework, không package.json. S�
 | Bản thiết kế cũ (5 khu vực, xanh lá) | `v-xanh-cu.html` — **dùng chung `localStorage`**, KHÔNG có phần đồng bộ |
 | Lược đồ + mô hình bảo mật Supabase | `docs/supabase-setup.sql` |
 | Script nhắc Telegram | `.github/scripts/send_telegram.py` |
+| **Việc đã hẹn** (cam kết lẻ có ngày giờ) | `docs/vows-setup.sql` · `vow.py` · `vow_add.py` · `vow_bot.py` · `.github/workflows/nhac-viec-hen.yml` — xem mục 🤝 dưới |
 | Nhận nút tick từ Telegram | `.github/scripts/tick_bot.py` + `.github/workflows/tick-bot.yml` |
 | Cắm token Telegram | `.github/scripts/setup-telegram.py` — chạy một lần, xem docstring |
 | Lịch nhắc | `.github/workflows/notify-telegram.yml` — 14:00 UTC = 21:00 VN |
@@ -38,6 +39,8 @@ có chủ đích**, xem dưới).
    `DRY_RUN=1 REN_STATE_FILE=<file.json> python3 .github/scripts/send_telegram.py | python3 .github/scripts/check_html.py`
    — bắt thẻ lồng nhau, thẻ Telegram không nhận, thẻ chưa đóng, và `& < >` trần chưa escape.
    Chính nó bắt được bẫy số 1 bên dưới, thứ mà đọc lướt không thấy.
+   **Sửa `check_html.py` thì chạy `test-cong-html.py` (+ `--tu-kiem`)** — xem mục 🧪 TEST CHECKER
+   HTML. Checker soi bài mà không ai soi checker thì nó câm lúc nào không biết.
 
 ## Đồng bộ Supabase — vì sao thiết kế như vậy
 
@@ -117,6 +120,132 @@ hợp lệ (`getUpdates` trả ok).
 Bản sao mã đồng bộ để ở `/Users/Huy/Claude/.ren66-device-id` (chmod 600, **ngoài repo** vì repo
 này public). Mất file đó mà cũng mất máy thì mất luôn nhật ký trên server — không có đường
 khôi phục, vì mã chính là chìa khoá duy nhất.
+
+### 🧪 TEST CHỐT SECRET — `.github/scripts/test-cong-secret.py` (dựng 29/07/2026)
+
+Áp luật mục 17 CLAUDE.md toàn cục: **cổng kiểm nào cũng phải có ít nhất MỘT ca PHẢI CHẶN.**
+
+Chốt *"chưa cấu hình ≠ cấu hình gãy"* trong `send_telegram.py:main()` là cổng loại **"hỏng thì im
+lặng cho qua"**: gỡ nó ra thì mốc 21:00 vẫn XANH mỗi ngày, chỉ là không tin nào tới. Chạy thử với
+đủ 3 secret KHÔNG phân biệt được cổng còn hay mất — cả hai đều xanh. Chỉ ca **cấu hình gãy → PHẢI
+ĐỎ** mới phân biệt được. Đây đúng là con lỗi bắt được 27/07/2026 (run 30250807802 success 10 giây
+trong khi `TELEGRAM_BOT_TOKEN` chưa từng được đặt).
+
+```
+python3 /Users/Huy/Claude/App/Ren66/.github/scripts/test-cong-secret.py
+python3 /Users/Huy/Claude/App/Ren66/.github/scripts/test-cong-secret.py --tu-kiem
+```
+8 ca, chạy **hoàn toàn offline** (`send_all` và `fetch_state` bị thay bằng bản ghi nhận — không gọi
+Telegram, không gọi Supabase): 4 ca **PHẢI ĐỎ** (mất token · mất chat · mất device — ca này vẫn phải
+GỬI tin rút gọn rồi mới để đỏ · thông báo phải nêu ĐÚNG tên secret thiếu) + 4 ca chống báo oan
+(chưa cấu hình gì → exit 0 · đủ 3 secret · `REN_STATE_FILE` thay được device · `DRY_RUN`).
+
+⚠️ **TEST XANH CHƯA ĐỦ.** `--tu-kiem` dựng 4 bản `send_telegram.py` đã gỡ đúng dòng bảo vệ rồi chạy
+lại bộ ca với `REN_SEND_MOD` — ca đã khai phải ĐỎ. Kết quả 29/07: **4/4 bản hỏng đều bị bắt.**
+⚠️ **Khai đúng ca nào phải đỏ, đừng khai thừa.** Đã vấp một lần: bản hỏng "nuốt mã thoát" vẫn in
+đúng chữ "CẤU HÌNH GÃY" nên ca soi CHỮ không thể đỏ — khai nó vào là tự báo động oan.
+⚠️ **KHÔNG test bằng token giả rồi gọi Telegram thật.** `DRY_RUN` lại bỏ qua chính cái chốt cần đo
+(`if not dry and thieu`), nên phải thay `send_all` trong tiến trình test — đó là lý do file test
+nạp module bằng `importlib` thay vì chạy `subprocess`.
+
+### 🧪 TEST CHECKER HTML — `.github/scripts/test-cong-html.py` (dựng 29/07/2026)
+
+Cùng luật mục 17: `check_html.py` cũng là cổng **"hỏng thì im lặng cho qua"** — tin sạch nó in
+`✓`, mà checker chết cũng in `✓` y hệt. Chạy `send_telegram.py | check_html.py` thấy toàn dấu ✓
+KHÔNG chứng minh được gì. Thứ nó canh là **bẫy số 1** ở trên: `<b>` lồng `<b>` làm Telegram từ
+chối CẢ tin nhắn — checker câm nghĩa là mốc 21:00 vẫn chạy, `send_all` vẫn gọi, tin không tới.
+
+```
+python3 /Users/Huy/Claude/App/Ren66/.github/scripts/test-cong-html.py
+python3 /Users/Huy/Claude/App/Ren66/.github/scripts/test-cong-html.py --tu-kiem
+```
+**16 ca, 12 ca PHẢI CHẶN** (thẻ lồng cùng loại · thẻ chưa đóng · đóng sai thứ tự · đóng thẻ chưa
+mở · thẻ Telegram không nhận · `<br/>` · `&` `<` `>` trần · **hai message cùng hỏng phải báo cả
+hai** · đầu vào không có message nào · **đầu vào CỤT**) + 4 ca chống báo oan, trong đó ca quan
+trọng nhất là **tin THẬT do `send_telegram.py` sinh ra bằng DRY_RUN** (đọc đầu ra thật thay vì
+bịa định dạng — đúng chuỗi lệnh ở quy tắc 5).
+
+⚠ **TEST XANH CHƯA ĐỦ.** `--tu-kiem` dựng **12 bản `check_html.py` đã gỡ đúng dòng bảo vệ** rồi
+chạy lại bộ ca qua `REN_CHECK_HTML` — ca đã khai phải ĐỎ. Kết quả 29/07: **12/12 bản hỏng đều bị
+bắt**, không ca nào đỏ ngoài dự kiến.
+⚠ **Khai đúng ca nào phải đỏ.** Ca "không có message nào" và ca "đầu vào CỤT" thoát bằng
+`sys.exit(1)` RIÊNG, nên bản hỏng *nuốt mã thoát cuối* không đụng tới chúng — khai vào là báo oan.
+
+**Ba lỗ đã vá cùng ngày trong `check_html.py`** (đừng "dọn cho gọn" mất):
+1. `all(<generator>)` **dừng ở message hỏng đầu tiên** — các message sau chưa từng được soi lần
+   nào. Nay dựng list trước rồi mới `all()`.
+2. **Khối `----- nút -----` bị soi như HTML.** Đó là JSON bàn phím inline, Telegram không parse
+   HTML trong đó; nhãn nút có `&` hay `<` là báo oan vào message cuối. Nay cắt trước khi soi.
+3. **Đầu vào CỤT thì vẫn xanh.** `send_telegram.py` chết giữa chừng thì ống dẫn còn vài khối đầu,
+   soi sạch mấy cái đó không nói lên gì. Nay đối chiếu với số khai ở dòng `=== DRY_RUN — N message ===`.
+   Kèm chuẩn hóa **NFC** đầu vào vì mốc cắt `----- nút -----` có dấu tiếng Việt (bài học NFD 29/07
+   bên QuanSu: NFD trông y hệt NFC, khác byte, cắt trượt).
+
+### 🤝 VIỆC ĐÃ HẸN — cam kết lẻ có ngày giờ (thêm 29/07/2026)
+
+Chỗ nhận **một cam kết lẻ có hạn**, sinh ra cho cuối buổi `/banthan`: skill đó chốt buổi bằng
+một việc nhỏ có ngày giờ, trước 29/07 nó chỉ nằm trong file `~/Claude/BanThan/*.md` — **không
+có gì nhắc và không có gì đếm**, đúng điểm gãy hồ sơ tính cách mục 10 điểm 5 (*"Huy không tự
+công nhận việc mình làm bền khi việc đó không được chấm điểm → phải có chỗ đếm hộ"*).
+
+⛔ **KHÔNG BAO GIỜ nhét cam kết lẻ vào `habits`.** `isHit` tính một ngày là ĐẠT khi tick ĐỦ mọi
+việc trong `habits` — thêm một việc lẻ vào là **chuỗi 66 ngày đứt oan** mỗi ngày chưa làm nó.
+Thêm nữa `ren_tick` tick tất một nhát, còn việc lẻ phải tick riêng và phải tự biến mất sau khi
+xong. Vì thế nó ở **bảng riêng `ren_vows`**, và không hàm nào của nó đọc/ghi `ren_state` —
+hỏng ở đây không kéo theo hỏng chuỗi.
+
+| Mảnh | Việc |
+|---|---|
+| `docs/vows-setup.sql` | Bảng + 4 hàm `security definer`. Cùng mô hình bảo mật `ren_state`: RLS bật, KHÔNG policy, KHÔNG grant bảng cho `anon` |
+| `vow.py` | Dùng chung: gọi RPC, `can_nhac()`, soạn tin, dựng nút. `REN_VOWS_FILE` = đường kiểm offline |
+| `vow_add.py` | Đẩy một cam kết (skill ban-than gọi). `--liet-ke` xem sổ + số đã giữ. `--han` hiểu "mai 21:00", "30/07", "2026-07-30 21:00" |
+| `vow_bot.py` | Nhắc khi tới hạn — `nhac-viec-hen.yml`, cron `*/30 * * * *` |
+| `tick_bot.py` → `xu_ly_vow()` | Nhận nút `ren:vow:<id>:<xong\|bo\|mo>` |
+
+**Bốn quyết định, đừng "dọn cho gọn" mất:**
+1. **Nút bấm đi CHUNG `tick_bot.py`, không dựng script poll thứ hai.** Bắt buộc, không phải cho
+   gọn: `getUpdates` chỉ chấp nhận MỘT người đọc — hai bên cùng poll một token là nuốt update
+   của nhau, Huy bấm thấy im rồi bấm lại. Cùng lý do đã tách Rèn khỏi bot Điểm Tin.
+2. **Nút "🙅 Chưa làm" KHÔNG phải nút hoãn** — nó ghi lại là không giữ được. Bỏ nó đi thì cách
+   duy nhất để tin im là lờ đi, mà lờ thì mẫu số chỉ còn những lần Huy làm được → con số "đã
+   giữ 7/9" thành vô nghĩa, mất đúng cái chỗ đếm hộ.
+3. **Nhắc lại sau 20 giờ, tối đa 5 lần rồi DỪNG.** 20 chứ không 24 vì cron GitHub trễ (bẫy số
+   4) — lấy 24 là lượt hôm sau trượt sang ngày kế rồi trôi dần. Dừng ở 5 vì nhắc mãi thì Huy
+   tắt thông báo, mà tắt là mất luôn tin nhắc 21:00. Sau đó cam kết để MỞ và **buổi bạn thân
+   sau hỏi** — đừng tự động khai bỏ hộ, bỏ là việc Huy phải tự nói ra.
+4. **Gửi hỏng thì KHÔNG ghi `ren_vow_nhac`.** Đếm là đã nhắc trong khi tin không tới = cam kết
+   đó im lặng trôi mất, đúng kiểu hỏng tính năng này sinh ra để chống.
+5. **`vow_bot.py` mất `REN_DEVICE_ID` thì đỏ luôn**, khác `send_telegram.py` (bên đó vẫn gửi
+   được tin rút gọn có ích). Ở đây không có mã thì không biết có cam kết nào — không có gì gửi.
+
+⚠️ Cam kết là chuyện riêng: chỉ **dòng cam kết + hạn** rời khỏi máy Huy, nội dung buổi nói
+chuyện ở lại `~/Claude/BanThan/`. Repo này PUBLIC nên tuyệt đối không đưa nội dung cam kết vào
+bất kỳ file nào ở đây — nó sống trong Supabase, khoá bằng mã đồng bộ.
+
+### 🧪 TEST CỔNG VIỆC ĐÃ HẸN — `.github/scripts/test-cong-vow.py` (dựng 29/07/2026)
+
+```
+python3 /Users/Huy/Claude/App/Ren66/.github/scripts/test-cong-vow.py
+python3 /Users/Huy/Claude/App/Ren66/.github/scripts/test-cong-vow.py --tu-kiem
+```
+**19 ca, 13 ca PHẢI CHẶN** (đã xong · đã bỏ · chưa tới hạn · chưa đủ 20 giờ · quá 5 lần · gửi
+hỏng thì không đếm · escape `< & >` · cấu hình gãy → exit 1 · **Supabase lỗi thật → exit 1** ·
+chat lạ · trạng thái callback lạ · hạn méo phải báo lỗi chứ không đoán · id không thuộc mã này)
++ 6 ca chống báo oan (trong đó **chưa chạy vows-setup.sql → exit 0 êm**: không tách ca này ra
+thì từ lúc đẩy mã lên tới lúc dán SQL, lịch đỏ 48 lần mỗi ngày, mà cổng kêu oan liên tục thì
+lần kêu thật cũng bị lờ). Chạy **hoàn toàn offline**. `--tu-kiem` dựng 9 bản code đã gỡ đúng
+dòng bảo vệ: **9/9 đều bị bắt** (29/07).
+
+⚠️ **BÀI HỌC MỚI 29/07, áp cho MỌI bộ test kiểu này (kể cả QuanSu, Báo Mới, canary):**
+**ca test chạy `subprocess` một file trên đĩa thì `--tu-kiem` KHÔNG đụng tới được** — subprocess
+luôn nạp bản thật, nên ca đó xanh trên cả bản đúng lẫn bản hỏng, tức là vô dụng. Chính
+`--tu-kiem` bắt được (ca `escape-html` lúc đầu viết bằng subprocess). Cách vá: gọi `main()`
+**trong tiến trình** rồi bắt stdout bằng `contextlib.redirect_stdout`. Riêng cái THƯỚC
+(`check_html.py`) thì vẫn chạy subprocess bản thật — nó đo, nó không phải thứ bị đo.
+
+⚠️ Phạm vi test là phần **Python**. Chốt phía SQL (regex mã, trần 300 ký tự, `device` trong
+`where` của `ren_vow_set`) phải kiểm bằng đoạn lệnh cuối `docs/vows-setup.sql` — bản giả file
+KHÔNG chứng minh hộ. Đừng đọc "17/17 xanh" thành "đã kiểm cả phía máy chủ".
 
 ### 🔘 Nút tick ngay trong tin nhắc (thêm 27/07/2026, chỉ thị Huy)
 

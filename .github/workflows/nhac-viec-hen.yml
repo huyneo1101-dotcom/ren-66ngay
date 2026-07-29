@@ -1,0 +1,49 @@
+name: Nhắc việc đã hẹn
+
+# Việc đã hẹn = một cam kết LẺ có ngày giờ riêng, khác hẳn các việc lặp hằng ngày của Rèn.
+# Vì mỗi cái một giờ nên không gộp được vào mốc 21:00 — gộp là nhắc sai hẹn, mà cam kết nhắc
+# sai hẹn thì không còn là cam kết. Xem đầu docs/vows-setup.sql để biết vì sao nó nằm ở bảng
+# riêng chứ không nhét vào state của Rèn (nhét vào là chuỗi 66 ngày đứt oan).
+#
+# ⏱️ Cron GitHub KHÔNG đúng giờ (trễ 5–15 phút là thường, xem bẫy số 4 trong CLAUDE.md), nên
+# lời hứa ở đây là "trong vòng nửa tiếng sau hạn", không phải đúng phút. Chạy dày hơn 30 phút
+# cũng không mua thêm được gì: cái trễ nằm ở hàng chờ của GitHub, không nằm ở lịch.
+#
+# Bản thân script tự chặn spam: một cam kết chỉ được nhắc lại sau 20 giờ, tối đa 5 lần
+# (`NHAC_CACH_GIO` / `MAX_NHAC` trong vow.py). Không có hai chốt đó thì lịch này gửi 48 tin/ngày.
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Chỉ in ra log, không gửi thật'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Chạy chồng là gửi hai tin giống hệt nhau cho cùng một cam kết: job sau đọc danh sách trước
+# khi job trước kịp ghi `ren_vow_nhac`, nên chốt 20 giờ không cứu được.
+concurrency:
+  group: ren-nhac-viec-hen
+  cancel-in-progress: false
+
+jobs:
+  nhac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gửi nhắc việc đã hẹn
+        env:
+          # Dùng chung bot RIÊNG của Rèn — cùng một luồng chat, và bắt buộc phải chung vì
+          # `getUpdates` chỉ chấp nhận MỘT người đọc (nút bấm do tick_bot.py nhận, xem file đó).
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REN_DEVICE_ID: ${{ secrets.REN_DEVICE_ID }}
+          DRY_RUN: ${{ inputs.dry && '1' || '' }}
+        run: python3 .github/scripts/vow_bot.py

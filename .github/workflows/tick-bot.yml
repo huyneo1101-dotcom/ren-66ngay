@@ -15,7 +15,11 @@ name: Nhận nút tick từ Telegram
 on:
   schedule:
     - cron: '*/5 14-17 * * *'   # 21:00–00:59 VN — khung Huy hay bấm, poll dày
-    - cron: '*/30 * * * *'      # vét cả ngày, cho nút bấm muộn
+    - cron: '*/10 * * * *'      # vét cả ngày, cho nút bấm muộn
+    # 29/07/2026: vét dày lên 30 → 10 phút. Trước đây nút chỉ sinh ra từ tin nhắc 21:00 nên
+    # ngoài khung tối gần như không có gì để đọc. Nay có thêm nút của VIỆC ĐÃ HẸN, mà việc đã
+    # hẹn thì giờ nào cũng có ("mai 8h gọi cho anh T") — để 30 phút thì bấm xong ngồi nhìn tin
+    # không đổi gì, đúng cái ma sát mà nút này sinh ra để xoá.
   workflow_dispatch:
 
 permissions:
